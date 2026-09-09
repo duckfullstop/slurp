@@ -9,16 +9,21 @@ from slurp.models.base import BaseModel
 
 
 class FetchMetadata(BaseModel):
+    """
+    FetchMetadata describes information about a piece of media.
+    """
+
+    # Name of the media
     name: str | None = None
-
+    # Author of the media
     author: str | None = None
-
+    # Time when the media was uploaded
     ts_upload: datetime.datetime | None = None
-
+    # Duration of the media in seconds - if fractional, round up
     duration: int | None = None
-
+    # Desriptive format that the media will be downloaded in
     format: str | None = None
-
+    # URL where the thumbnail can be retrieved
     thumbnail_url: str | None = None
 
     class Meta:
@@ -26,6 +31,10 @@ class FetchMetadata(BaseModel):
 
 
 class Fetch(BaseModel, index=True):
+    """
+    Fetch describes a task to grab a piece of media from the specified target.
+    """
+
     url: str = Field(index=True)
     slug: str = Field(index=True)
     target: str | None = None
@@ -78,8 +87,17 @@ class Fetch(BaseModel, index=True):
 
 
 class FetchEvent(BaseModel, index=True):
+    """
+    FetchEvent is a given event related to a Fetch. These should be read in chronological order.
+    """
+
+    # The ID of the Fetch.
     fetch_id: str = Field(index=True)
+    # The type of event.
     typ: str
+    # The level of severity.
     level: str
+    # The human-readable message.
     message: str
+    # An optional status code.
     status: int = 0
