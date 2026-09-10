@@ -6,8 +6,10 @@ from slurp.fetchers.types import Format
 from slurp.fetchers.ytdlp import YTDLPFetcher
 
 _urls = {
+    # The URLs in this dictionary are here purely because they serve as good tests. They are not an endorsement of the content.
     "small": "https://www.youtube.com/watch?v=eVrYbKBrI7o",  # toot
     "huge": "https://www.youtube.com/watch?v=mSX3OyW9Rao",  # 8 hours roaring fire
+    "x_odd_length": "https://x.com/IslamInvasion/status/2096682082450002048",  # Fractional length - content warning
 }
 
 
@@ -40,6 +42,15 @@ class TestYTDLPFetcher:
         assert meta is not None, "_get_metadata returned None"
 
     @pytest.mark.network
+    def test_get_metadata_x(self, fetcher_instance):
+        meta = fetcher_instance._get_metadata(_urls["x_odd_length"])
+        assert meta is not None, "_get_metadata returned None"
+        # Check fractional durations are rounded correctly
+        assert meta.duration == 32, (
+            f"get_metadata returned with an unexpected duration - expected 13, got {meta.duration}"
+        )
+
+    @pytest.mark.network
     def test_get_metadata_with_extractor_args(self, fetcher_instance_with_args):
         meta = fetcher_instance_with_args._get_metadata(_urls["huge"])
         assert meta is not None, "_get_metadata returned None"
@@ -52,6 +63,17 @@ class TestYTDLPFetcher:
         ):
             print(event)
         assert (tmp_path / "test.webm").exists(), (
+            "output file does not exist (expected 'test.mp4')"
+        )
+
+    @pytest.mark.network
+    @pytest.mark.dl
+    def test_download_x(self, tmp_path, fetcher_instance):
+        for event in fetcher_instance.fetch(
+            _urls["x_odd_length"], Format.VIDEO_AUDIO, str(tmp_path.absolute()), "test"
+        ):
+            print(event)
+        assert (tmp_path / "test.mp4").exists(), (
             "output file does not exist (expected 'test.webm')"
         )
 

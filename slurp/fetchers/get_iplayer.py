@@ -1,4 +1,5 @@
 import json
+import math
 import os
 import pathlib
 import queue
@@ -142,7 +143,14 @@ class BBCiPlayerFetcher(Fetcher):
                 if meta.get("firstbcast")
                 else None
             )
-            data.duration = meta.get("duration")
+            try:
+                data.duration = (
+                    math.ceil(meta.get("duration"))
+                    if meta.get("duration") is not None
+                    else None
+                )
+            except ValueError:
+                data.duration = None
 
             data.thumbnail_url = meta.get("thumbnail")
 
