@@ -25,7 +25,7 @@ class MediaMetadata:
 
     ts_upload: datetime | None = None
 
-    duration: str = "Unknown Duration"
+    duration: int | None = None
 
     format: str = "Unknown Format"
 
@@ -34,7 +34,6 @@ class MediaMetadata:
 
 class FetcherUpdateEvent(ABC):
     """A FetcherUpdateEvent is any event that happens over the course of a fetcher's fetching lifespan."""
-
 
 
 @dataclass()

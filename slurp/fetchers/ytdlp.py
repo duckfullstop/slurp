@@ -1,3 +1,4 @@
+import math
 import queue
 import threading
 from collections.abc import Generator
@@ -125,7 +126,14 @@ class YTDLPFetcher(Fetcher):
                 if response.get("timestamp", False)
                 else None
             )
-            data.duration = response.get("duration")
+            try:
+                data.duration = (
+                    math.ceil(response.get("duration"))
+                    if response.get("duration") is not None
+                    else None
+                )
+            except ValueError:
+                data.duration = None
 
             data.thumbnail_url = response.get("thumbnail")
 
