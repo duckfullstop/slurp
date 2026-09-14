@@ -1,6 +1,7 @@
 from flask import Blueprint
 from flask_restx import Api
 
+from slurp.api.config import api as configNS
 from slurp.api.fetchtasks import api as fetchtasksNS
 
 api_blueprint = Blueprint("api", __name__, url_prefix="/api/v1")
@@ -13,3 +14,4 @@ api = Api(
 )
 
 api.add_namespace(fetchtasksNS)
+api.add_namespace(configNS)

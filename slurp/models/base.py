@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 
 from redis_om import Field, JsonModel
@@ -22,3 +23,6 @@ class BaseModel(JsonModel):
 
     class Meta:
         database = db.redis
+
+    def toJSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
