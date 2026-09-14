@@ -28,7 +28,7 @@ let highlightColor = computed(() => {
 <template>
   <UCard :ui="{
       body: 'sm:py-1 sm:px-1 py-1 px-1'
-    }" class="font-mono ring-0" variant="solid">
+    }" class="font-mono ring-0 dark:bg-gray-900 dark:text-white" variant="solid">
     <div class="flex flex-row flex-wrap space-x-5">
       <div class="flex-none sm:basis-full md:basis-auto">{{ format(event.ts_created, 'yyyy-MM-dd HH:MM') }} UTC</div>
       <!-- TODO this doesn't wrap right on smaller displays. -->

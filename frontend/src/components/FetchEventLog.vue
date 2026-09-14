@@ -17,7 +17,7 @@ const {data, isLoading, error} = useTaskEventsQuery(() => props.id)
     Error: {{ error.message }}
   </p>
   <UScrollArea v-else-if="data" v-slot="{ item }" :items="data"
-               class="w-full h-96 bg-black">
+               class="w-full h-96 bg-black dark:bg-black">
     <FetchEventLogEntry :event="item"/>
     <USeparator></USeparator>
   </UScrollArea>

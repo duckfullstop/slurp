@@ -18,7 +18,7 @@ useHead({
 <template>
   <Suspense>
     <UApp>
-      <UHeader>
+      <UHeader :toggle="false">
         <template #left>
           <RouterLink
             class="focus-visible:outline-3 outline-primary/25 rounded-md p-1 -ms-1"
@@ -26,9 +26,6 @@ useHead({
           >
             <AppLogo class="w-auto h-6 shrink-0"/>
           </RouterLink>
-          Slurp
-
-          <TemplateMenu/>
         </template>
 
         <template #right>
@@ -36,7 +33,7 @@ useHead({
         </template>
       </UHeader>
 
-      <UMain>
+      <UMain class="pt-5">
         <RouterView/>
       </UMain>
 
@@ -45,7 +42,11 @@ useHead({
       <UFooter>
         <template #left>
           <p class="text-sm text-muted">
-            With 💙 from Andi Leach | CBS News © {{ new Date().getFullYear() }}
+            © CBS News {{ new Date().getFullYear() }}
+          </p>
+          <USeparator class="h-3" orientation="vertical"/>
+          <p class="text-sm text-muted">
+            A <a href="https://duck.me.uk/contact">technoduck.</a> project
           </p>
         </template>
 

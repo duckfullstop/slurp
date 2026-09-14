@@ -6,15 +6,24 @@ const {data, isLoading, error} = useTasksQuery()
 </script>
 
 <template>
-  <UPageSection>
+  <UContainer>
+    <CreateTaskForm/>
+  </UContainer>
+  <USeparator class="py-5"/>
+  <UContainer>
     <p v-if="isLoading">
       Loading...
     </p>
     <p v-else-if="error">
       Error: {{ error.message }}
     </p>
-    <UPageGrid v-else>
-      <FetchCard v-for="task in data" v-bind="task"/>
+    <UPageGrid v-else-if="data" class="flex-col-reverse">
+      <div v-for="task in data.slice().reverse()" :key="task.id">
+        <RouterLink :to="{name: '/fetch/[id]', params: {id: task.id}}">
+          <FetchCard v-bind="task"/>
+        </RouterLink>
+      </div>
+
     </UPageGrid>
-  </UPageSection>
+  </UContainer>
 </template>
