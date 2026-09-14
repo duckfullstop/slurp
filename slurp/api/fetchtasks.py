@@ -38,7 +38,8 @@ fetchMetadata = api.model(
 fetchEvent = api.model(
     "FetchEvent",
     {
-        "fetch_id": fields.String(description="The ID to which this Event relates."),
+        "fetch_id": fields.String(description="The ID to which this Event relates"),
+        "ts_created": fields.DateTime(description="Created time"),
         "typ": fields.String(description="Event type"),
         "level": fields.String(description="Event level"),
         "message": fields.String(description="Event message"),
@@ -182,7 +183,7 @@ class TaskEvents(Resource):
     @api.doc("get_events")
     @api.marshal_list_with(fetchEvent)
     def get(self, task_id):
-        events = FetchEvent.find(FetchEvent.fetch_id == task_id).first()
+        events = FetchEvent.find(FetchEvent.fetch_id == task_id).all()
         return events
 
 
