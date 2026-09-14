@@ -32,11 +32,15 @@ export interface FetchEvent {
   typ: string
   level: string
   message: string
-  status: string
+  status: number
 }
 
 export interface AppConfig {
   outputs: string[]
+}
+
+export interface CreateTaskResponse {
+  fetch_id: string
 }
 
 export async function fetchTasks(): Promise<Task[]> {
@@ -71,7 +75,7 @@ export async function fetchConfig(): Promise<AppConfig> {
   return res.json() as Promise<AppConfig>
 }
 
-export async function createTask(payload: CreateTaskInput): Promise<Task> {
+export async function createTask(payload: CreateTaskInput): Promise<CreateTaskResponse> {
   const res = await fetch('/api/v1/task/', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -80,6 +84,6 @@ export async function createTask(payload: CreateTaskInput): Promise<Task> {
   if (!res.ok) {
     throw new Error(`Failed to create task: ${res.status} ${res.statusText}`)
   }
-  return res.json() as Promise<Task>
+  return res.json() as Promise<CreateTaskResponse>
 }
 

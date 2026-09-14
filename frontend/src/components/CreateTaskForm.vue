@@ -34,12 +34,12 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
     state.url = undefined
     state.slug = undefined
     state.format = 'VIDEO_AUDIO'
-    state.target = config.outputs?.value?.[0]
-  } catch (error) {
+    state.target = config.value?.outputs?.[0]
+  } catch (error: unknown) {
     console.error(error)
     toast.add({
       title: 'Oh no! Problem with request',
-      description: error.message,
+      description: error instanceof Error ? error.message : String(error),
       icon: 'pepicons-pop:soft-drink-circle-off'
     })
   }
