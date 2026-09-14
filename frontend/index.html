@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8"/>
+  <link href="/logo.svg" rel="icon" type="image/svg+xml"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <meta content="#ffffff" name="theme-color"/>
+  <link href="https://fonts.bunny.net" rel="preconnect">
+  <link href="https://fonts.bunny.net/css?family=public-sans:400,500,600,700" rel="stylesheet"/>
+  <title>Vue Starter Template</title>
+  <meta
+    content="A production-ready starter template powered by Nuxt UI. Build beautiful, accessible, and performant applications in minutes, not hours."
+    name="description">
+  <meta content="Vue Starter Template" property="og:title">
+  <meta
+    content="A production-ready starter template powered by Nuxt UI. Build beautiful, accessible, and performant applications in minutes, not hours."
+    property="og:description">
+  <meta content="https://ui.nuxt.com/assets/templates/vue/starter-light.png" property="og:image">
+  <meta content="summary_large_image" name="twitter:card">
+  <style>html {
+    background-color: #ffffff
+  }
+
+  html.dark {
+    background-color: #18181b
+  }</style>
+  <script>
+    (function () {
+      var mode = localStorage.getItem('vueuse-color-scheme') || 'auto'
+      var dark = mode === 'dark' || (mode === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      if (dark) {
+        document.documentElement.classList.add('dark')
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', '#18181b')
+      }
+    })()
+  </script>
+</head>
+
+<body>
+<div id="app" class="isolate"></div>
+<script src="/src/main.ts" type="module"></script>
+</body>
+
+</html>

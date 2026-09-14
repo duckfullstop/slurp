@@ -1,0 +1,53 @@
+@import './base.css';
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+#app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-weight: normal;
+}
+
+a,
+.green {
+  text-decoration: none;
+  color: hsla(160, 100%, 37%, 1);
+  transition: 0.4s;
+  padding: 3px;
+}
+
+@media (hover: hover) {
+  a:hover {
+    background-color: hsla(160, 100%, 37%, 0.2);
+  }
+}
+
+@media (min-width: 1024px) {
+  body {
+    display: flex;
+    place-items: center;
+  }
+
+  #app {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 0 2rem;
+  }
+}
+
+
+@theme static {
+  /* CBS News Blue */
+  --color-brand-50: #8eaced;
+  --color-brand-100: #5683d8;
+  --color-brand-200: #4277bf;
+  --color-brand-300: #1747a6;
+  --color-brand-400: #2a5ab8;
+  --color-brand-500: #1e5cd9;
+  --color-brand-600: #1d4498;
+  --color-brand-700: #0d2f73;
+  --color-brand-800: #0e3178;
+  --color-brand-900: #082359;
+  --color-brand-950: #010e26;
+}
