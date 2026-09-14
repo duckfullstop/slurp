@@ -39,7 +39,7 @@ def create_fetch(self: Task, url: str, fmt: str, target: str, slug: str) -> str:
     :param fmt: Format to perform the download in as defined by fetchers.types.Format.
     :param target: Target output directory. Must be configured.
     :param slug: Output filename.
-    :return: Fetch PK.
+    :return: Created Fetch's PK.
     """
     # Safety: Validate the destination is permitted
     if target not in current_app.config["OUTPUTS"]:

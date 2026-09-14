@@ -2,8 +2,14 @@ from enum import Enum
 from typing import Annotated, Any
 
 from flask import current_app, request
-from flask_restx import Namespace, Resource, ValidationError, abort, fields
-from pydantic import BaseModel, BeforeValidator, Field, field_serializer
+from flask_restx import Namespace, Resource, abort, fields
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    Field,
+    ValidationError,
+    field_serializer,
+)
 from redis_om import model
 
 from slurp.fetchers.types import Format
@@ -127,7 +133,13 @@ class List(Resource):
     @api.doc("list_tasks")
     @api.marshal_list_with(fetchTask)
     def get(self):
-        fetches = Fetch.find().all()
+        fetches = (
+            Fetch.find()
+            .sort_by(
+                "ts_created",
+            )
+            .all()
+        )
         return fetches
 
     @api.doc("create_task")
@@ -143,7 +155,10 @@ class List(Resource):
                 raw_data = request.form.to_dict()
 
             # Validate with Pydantic
-            data = CreateTaskSchema(**raw_data)
+            try:
+                data = CreateTaskSchema(**raw_data)
+            except ValidationError as e:
+                return {"message": "Validation failed", "errors": e.errors()}, 400
 
             # Safety: Validate the destination is permitted
             if data.target not in current_app.config["OUTPUTS"]:
@@ -183,7 +198,9 @@ class TaskEvents(Resource):
     @api.doc("get_events")
     @api.marshal_list_with(fetchEvent)
     def get(self, task_id):
-        events = FetchEvent.find(FetchEvent.fetch_id == task_id).all()
+        events = (
+            FetchEvent.find(FetchEvent.fetch_id == task_id).sort_by("ts_created").all()
+        )
         return events
 
 
