@@ -14,11 +14,12 @@ const {data, isLoading, error} = useTaskQuery(() => route.params.id)
     Error: {{ error.message }}
   </p>
   <div v-else-if="data">
-    <UPageSection>
-      <FetchCard v-bind="data"/>
-    </UPageSection>
     <UContainer>
-      <h2 class="text-4xl font-bold">Test</h2>
+      <FetchCard extended v-bind="data"/>
+    </UContainer>
+    <USeparator class="py-5"/>
+    <UContainer>
+      <h2 class="text-4xl font-bold pb-2">Fetch Log</h2>
       <FetchEventLog v-bind="data"/>
     </UContainer>
   </div>

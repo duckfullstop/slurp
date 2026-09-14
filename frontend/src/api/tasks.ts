@@ -1,3 +1,5 @@
+import type {CreateTaskInput} from '../schemas/createTask'
+
 export interface FetchMetadata {
   name?: string
   author?: string
@@ -33,6 +35,10 @@ export interface FetchEvent {
   status: string
 }
 
+export interface AppConfig {
+  outputs: string[]
+}
+
 export async function fetchTasks(): Promise<Task[]> {
   const res = await fetch('/api/v1/task/')
   if (!res.ok) {
@@ -55,5 +61,25 @@ export async function fetchTaskEvents(id: string): Promise<FetchEvent[]> {
     throw new Error(`Failed to fetch task ${id} events: ${res.status} ${res.statusText}`)
   }
   return res.json() as Promise<FetchEvent[]>
+}
+
+export async function fetchConfig(): Promise<AppConfig> {
+  const res = await fetch('/api/v1/config/')
+  if (!res.ok) {
+    throw new Error(`Failed to fetch app configuration: ${res.status} ${res.statusText}`)
+  }
+  return res.json() as Promise<AppConfig>
+}
+
+export async function createTask(payload: CreateTaskInput): Promise<Task> {
+  const res = await fetch('/api/v1/task/', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to create task: ${res.status} ${res.statusText}`)
+  }
+  return res.json() as Promise<Task>
 }
 
