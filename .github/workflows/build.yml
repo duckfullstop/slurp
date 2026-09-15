@@ -69,6 +69,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false
+          build-args: |
+            NODE_ENV=${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'development' }}
 
   #      - name: Attest SBOM
   #        uses: actions/attest-sbom@v2
