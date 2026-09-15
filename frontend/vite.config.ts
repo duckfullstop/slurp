@@ -3,7 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import vueRouter from 'vue-router/vite'
 import ui from '@nuxt/ui/vite'
 import * as child from 'child_process'
-import packageConfig from './package.json'
+import packageConfig from './package.json' with {type: 'json'}
 
 let commitHash: string
 try {
@@ -21,7 +21,6 @@ export default defineConfig({
   },
   define: {
     __APP_COMMIT__: JSON.stringify(commitHash),
-    // @ts-expect-error version may not exist on package config
     __APP_VERSION__: JSON.stringify(packageConfig.version ? packageConfig.version : 'Unknown'),
   },
   server: {
