@@ -3,10 +3,14 @@ import {computed} from 'vue'
 import {useHead} from '@unhead/vue'
 import {useColorMode} from '@vueuse/core'
 import {VueQueryDevtools} from '@tanstack/vue-query-devtools'
+import AuthorLogo from "./components/AuthorLogo.vue";
 
 const colorMode = useColorMode()
 const isDev = import.meta.env.DEV
 const themeColor = computed(() => colorMode.value === 'dark' ? '#18181b' : '#ffffff')
+
+const appIcon = import.meta.env.VITE_APP_ICON ? import.meta.env.VITE_APP_ICON : "simple-icons:cbs"
+const appCopyright = import.meta.env.VITE_APP_COPYRIGHT ? import.meta.env.VITE_APP_COPYRIGHT : "CBS News"
 
 useHead({
   meta: [
@@ -37,16 +41,18 @@ useHead({
         <RouterView/>
       </UMain>
 
-      <USeparator icon="simple-icons:cbs"/>
+      <USeparator :icon="appIcon"/>
 
       <UFooter>
         <template #left>
           <p class="text-sm text-muted">
-            © CBS News {{ new Date().getFullYear() }}
+            © {{ appCopyright }} {{ new Date().getFullYear() }}
           </p>
           <USeparator class="h-3" orientation="vertical"/>
-          <p class="text-sm text-muted">
-            A <a href="https://duck.me.uk/contact">technoduck.</a> project
+          <p class="text-sm text-muted flex flex-nowrap items-center">
+            A <a href="https://duck.me.uk">
+            <AuthorLogo class="flex-1 h-3 px-1"/>
+          </a> project
           </p>
         </template>
 
