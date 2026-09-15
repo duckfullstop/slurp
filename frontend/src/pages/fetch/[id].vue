@@ -87,7 +87,7 @@ if (data.value?.id) {
     />
   </p>
   <div v-else-if="data">
-    <UContainer>
+    <UContainer class="flex flex-col items-center">
       <FetchCard
         :task="data"
         extended

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import imgSrc from '../../public/technoduck.svg'
+import imgSrc from '../assets/img/technoduck.svg'
 </script>
 <template>
   <img

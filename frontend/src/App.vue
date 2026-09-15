@@ -7,7 +7,7 @@ import AuthorLogo from "./components/AuthorLogo.vue";
 import {useLiveEvents} from "./composables/useLiveEvents";
 import {useNotifier} from "./composables/useNotifier.ts";
 
-import favicon from "../public/favicon.ico";
+import favicon from "./assets/img/favicon.ico";
 
 const {status: liveEventsStatus} = useLiveEvents()
 useNotifier()
