@@ -49,21 +49,55 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
 </script>
 
 <template>
-  <UForm :schema="createTaskSchema" :state="state" class="space-y-4" @submit="onSubmit">
-    <UFormField label="🌐 URL" name="url" required>
-      <UInput v-model="state.url" class="w-full" placeholder="URL"/>
+  <UForm
+    :schema="createTaskSchema"
+    :state="state"
+    class="space-y-4"
+    @submit="onSubmit"
+  >
+    <UFormField
+      label="🌐 URL"
+      name="url"
+      required
+    >
+      <UInput
+        v-model="state.url"
+        class="w-full"
+        placeholder="URL"
+      />
     </UFormField>
 
-    <UFormField label="🐌 Slug" name="slug" required>
-      <UInput v-model="state.slug" class="w-full" placeholder="Slug"/>
+    <UFormField
+      label="🐌 Slug"
+      name="slug"
+      required
+    >
+      <UInput
+        v-model="state.slug"
+        class="w-full"
+        placeholder="Slug"
+      />
     </UFormField>
 
-    <UFormField label="✍️ Format" name="format" required>
-      <USelect v-model="state.format" :items="FORMAT_OPTIONS"
-               class="w-full" placeholder="Select an output format"/>
+    <UFormField
+      label="✍️ Format"
+      name="format"
+      required
+    >
+      <USelect
+        v-model="state.format"
+        :items="FORMAT_OPTIONS"
+        class="w-full"
+        placeholder="Select an output format"
+      />
     </UFormField>
 
-    <UFormField :error="configError ? configError.message : undefined" label="📁 Target" name="target" required>
+    <UFormField
+      :error="configError ? configError.message : undefined"
+      label="📁 Target"
+      name="target"
+      required
+    >
       <USelect
         v-model="state.target"
         :disabled="isLoadingConfig || !!configError"
@@ -87,8 +121,12 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
       title="Issue requesting slurp"
     />
 
-    <UButton :disabled="isLoadingConfig || !!configError" :loading="mutation.isPending.value" color="info"
-             type="submit">
+    <UButton
+      :disabled="isLoadingConfig || !!configError"
+      :loading="mutation.isPending.value"
+      color="info"
+      type="submit"
+    >
       <UIcon name="pepicons-pop:soft-drink"/>
       Slurp Media
     </UButton>

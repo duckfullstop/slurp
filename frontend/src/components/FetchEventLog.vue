@@ -64,20 +64,36 @@ function jumpToLive() {
       variant="solid"
     />
   </p>
-  <div v-else-if="data" class="relative">
-    <UScrollArea ref="scrollAreaRef" v-slot="{ item }" :items="data"
-                 class="w-full h-96 bg-black dark:bg-black">
+  <div
+    v-else-if="data"
+    class="relative"
+  >
+    <UScrollArea
+      ref="scrollAreaRef"
+      v-slot="{ item }"
+      :items="data"
+      class="w-full h-96 bg-black dark:bg-black"
+    >
       <FetchEventLogEntry :event="item"/>
-      <USeparator></USeparator>
+      <USeparator/>
     </UScrollArea>
-    <UBadge v-if="stickToBottom" class="absolute bottom-0 right-4 z-10 items-center gap-1.5 rounded-b-none"
-            color="success"
-            variant="subtle">
+    <UBadge
+      v-if="stickToBottom"
+      class="absolute bottom-0 right-4 z-10 items-center gap-1.5 rounded-b-none"
+      color="success"
+      variant="subtle"
+    >
       <span class="size-2 rounded-full bg-success-500 animate-pulse"/>
       Live
     </UBadge>
-    <UButton v-else class="absolute bottom-0 right-4 z-10 rounded-b-none" color="neutral" size="xs" variant="subtle"
-             @click="jumpToLive">
+    <UButton
+      v-else
+      class="absolute bottom-0 right-4 z-10 rounded-b-none"
+      color="neutral"
+      size="xs"
+      variant="subtle"
+      @click="jumpToLive"
+    >
       Paused — jump to latest
     </UButton>
   </div>

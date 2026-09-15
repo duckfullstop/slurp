@@ -30,10 +30,12 @@ const configFetcherList = computed<AccordionItem[]>(() => {
   </UPageHero>
   <USeparator class="pb-10"/>
   <UContainer>
-    <UHeader class="pb-5" title="Available Fetchers"/>
+    <UHeader
+      class="pb-5"
+      title="Available Fetchers"
+    />
     <UCard class="w-full sm:w-200 justify-self-center">
-      <p v-if="isLoadingConfig">
-      </p>
+      <p v-if="isLoadingConfig"/>
       <p v-else-if="configError">
         <UAlert
           :description="configError.message"
@@ -43,11 +45,22 @@ const configFetcherList = computed<AccordionItem[]>(() => {
           variant="solid"
         />
       </p>
-      <UAccordion v-else :items="configFetcherList" type="multiple">
+      <UAccordion
+        v-else
+        :items="configFetcherList"
+        type="multiple"
+      >
         <template #body="{ item }">
-          <p class="text-lg pb-1">This fetcher can handle:</p>
+          <p class="text-lg pb-1">
+            This fetcher can handle:
+          </p>
           <ul class="list-disc list-inside">
-            <li v-for="service in item.services" :key="service">{{ service }}</li>
+            <li
+              v-for="service in item.services"
+              :key="service"
+            >
+              {{ service }}
+            </li>
           </ul>
         </template>
       </UAccordion>

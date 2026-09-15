@@ -26,13 +26,23 @@ let highlightColor = computed(() => {
 </script>
 
 <template>
-  <UCard :ui="{
+  <UCard
+    :ui="{
       body: 'sm:py-1 sm:px-1 py-1 px-1'
-    }" class="font-mono ring-0 dark:bg-gray-900 dark:text-white" variant="solid">
+    }"
+    class="font-mono ring-0 dark:bg-gray-900 dark:text-white"
+    variant="solid"
+  >
     <div class="flex flex-row flex-wrap space-x-5">
-      <div class="flex-none sm:basis-full md:basis-auto">{{ format(event.ts_created, 'yyyy-MM-dd HH:MM') }} UTC</div>
+      <div class="flex-none sm:basis-full md:basis-auto">
+        {{ format(event.ts_created, 'yyyy-MM-dd HH:MM') }} UTC
+      </div>
       <!-- TODO this doesn't wrap right on smaller displays. -->
-      <div :class="highlightColor" class="flex-none md:flex-1">{{ event.message }}
+      <div
+        :class="highlightColor"
+        class="flex-none md:flex-1"
+      >
+        {{ event.message }}
       </div>
     </div>
   </UCard>

@@ -55,9 +55,13 @@ icon.value = favicon
         </template>
 
         <template #right>
-          <UBadge :color="liveEventsStatusColor" :label="liveEventsStatusText" :ui="{
+          <UBadge
+            :color="liveEventsStatusColor"
+            :label="liveEventsStatusText"
+            :ui="{
               base: '-right-2'
-            }"/>
+            }"
+          />
           <UColorModeButton/>
         </template>
       </UHeader>
@@ -73,7 +77,10 @@ icon.value = favicon
           <p class="text-sm text-muted">
             © {{ appCopyright }} {{ new Date().getFullYear() }}
           </p>
-          <USeparator class="h-3" orientation="vertical"/>
+          <USeparator
+            class="h-3"
+            orientation="vertical"
+          />
           <p class="text-sm text-muted flex flex-nowrap items-center">
             A <a href="https://duck.me.uk">
             <AuthorLogo class="flex-1 h-3 px-1"/>
