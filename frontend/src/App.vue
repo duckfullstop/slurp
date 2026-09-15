@@ -1,10 +1,12 @@
 <script lang="ts" setup>
 import {computed} from 'vue'
 import {useHead} from '@unhead/vue'
-import {useColorMode} from '@vueuse/core'
+import {useColorMode, useFavicon} from '@vueuse/core'
 import {VueQueryDevtools} from '@tanstack/vue-query-devtools'
 import AuthorLogo from "./components/AuthorLogo.vue";
 import {useLiveEvents} from "./composables/useLiveEvents";
+
+import favicon from "../public/favicon.ico";
 
 const {status: liveEventsStatus} = useLiveEvents()
 
@@ -30,8 +32,11 @@ const appCopyright = import.meta.env.VITE_APP_COPYRIGHT ? import.meta.env.VITE_A
 useHead({
   meta: [
     {name: 'theme-color', content: themeColor}
-  ]
+  ],
 })
+
+const icon = useFavicon()
+icon.value = favicon
 </script>
 
 <template>
