@@ -30,6 +30,7 @@ const themeColor = computed(() => colorMode.value === 'dark' ? '#18181b' : '#fff
 
 const appIcon = import.meta.env.VITE_APP_ICON ? import.meta.env.VITE_APP_ICON : "simple-icons:cbs"
 const appCopyright = import.meta.env.VITE_APP_COPYRIGHT ? import.meta.env.VITE_APP_COPYRIGHT : "CBS News"
+const appVersion = import.meta.env.DEV ? __APP_COMMIT__ : __APP_VERSION__
 
 useHead({
   meta: [
@@ -89,6 +90,14 @@ icon.value = favicon
         </template>
 
         <template #right>
+          <UBadge
+            class="font-mono"
+            color="neutral"
+            variant="soft"
+          >
+            <UIcon name="material-symbols:package-2"/>
+            {{ appVersion }}
+          </UBadge>
           <UButton
             aria-label="GitHub"
             color="neutral"

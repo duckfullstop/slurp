@@ -2,3 +2,5 @@ allowBuilds:
   '@tailwindcss/oxide': false
   esbuild: false
   vue-demi: false
+minimumReleaseAgeExclude:
+  - '@types/node@26.6.0'
