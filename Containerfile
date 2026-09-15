@@ -1,4 +1,4 @@
-FROM node:26-slim AS frontend-build
+FROM ghcr.io/pnpm/pnpm:12 AS frontend-build
 
 WORKDIR /app/frontend
 
@@ -11,11 +11,8 @@ ENV VITE_APP_NAME="${VITE_APP_NAME}" \
     VITE_APP_COPYRIGHT="${VITE_APP_COPYRIGHT}" \
     NODE_ENV="${NODE_ENV}"
 
-RUN corepack enable
-
-# Copy lockfile-related files first so dependency install is cached independently of source changes
 COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
-RUN corepack use pnpm@12.4.1 && pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 COPY frontend/ ./
 RUN pnpm build
