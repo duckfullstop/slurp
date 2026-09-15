@@ -35,8 +35,15 @@ export interface FetchEvent {
   status: number
 }
 
+export interface AppConfigFetcher {
+  services: string[]
+}
+
 export interface AppConfig {
   outputs: string[]
+  fetchers: {
+    [key: string]: AppConfigFetcher
+  }
 }
 
 export interface CreateTaskResponse {

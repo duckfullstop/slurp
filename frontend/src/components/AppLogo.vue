@@ -4,7 +4,7 @@ const appIcon = import.meta.env.VITE_APP_ICON ? import.meta.env.VITE_APP_ICON : 
 </script>
 <template>
   <div class="flex flex-nowrap items-center">
-    <UIcon :name="appIcon" class="flex-1 text-2xl"/>
-    <span class="flex-1 pl-2 font-bold text-2xl">{{ appName }}</span>
+    <UIcon :name="appIcon"/>
+    <span class="pl-2 font-bold">{{ appName }}</span>
   </div>
 </template>
