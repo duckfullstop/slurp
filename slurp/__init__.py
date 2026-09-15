@@ -2,7 +2,7 @@ import os
 import tomllib
 
 from celery import Celery, Task
-from flask import Flask, app, request, stream_with_context
+from flask import Flask, request, stream_with_context
 from flask_sse import sse
 from flask_vite import Vite
 
