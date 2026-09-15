@@ -1,13 +1,22 @@
 <script lang="ts" setup>
-import {reactive, watch} from 'vue'
-import type {FormSubmitEvent} from '@nuxt/ui'
+import {reactive, ref, watch} from 'vue'
+import type {Form, FormSubmitEvent} from '@nuxt/ui'
 import {useConfigQuery, useCreateTaskMutation} from '../composables/useTasks'
 import {type CreateTaskInput, createTaskSchema, FORMAT_OPTIONS} from '../schemas/createTask'
+import {useRouter} from "vue-router";
 
 const toast = useToast()
 
+const router = useRouter()
+
 const {data: config, isLoading: isLoadingConfig, error: configError} = useConfigQuery()
 const mutation = useCreateTaskMutation()
+
+const form = ref<Form<CreateTaskInput> | null>(null)
+
+// Tracks which button triggered the form submission
+type SubmitAction = 'redirect' | 'background'
+const submitAction = ref<SubmitAction>('redirect')
 
 const state = reactive<Partial<CreateTaskInput>>({
   url: undefined,
@@ -24,17 +33,20 @@ watch(config, (newConfig) => {
 
 async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
   try {
-    await mutation.mutateAsync(event.data)
-    console.log(event.data)
+    const response = await mutation.mutateAsync(event.data)
     toast.add({
       title: 'Ingest task created successfully.',
-      icon: 'pepicons-pop:soft-drink-circle-off'
+      icon: 'pepicons-pop:soft-drink-circle'
     })
     // Reset state
     state.url = undefined
     state.slug = undefined
     state.format = 'VIDEO_AUDIO'
     state.target = config.value?.outputs?.[0]
+
+    if (submitAction.value === 'redirect') {
+      router.push({name: '/fetch/[id]', params: {id: response.fetch_id}})
+    }
   } catch (error: unknown) {
     console.error(error)
     toast.add({
@@ -43,6 +55,7 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
       icon: 'pepicons-pop:soft-drink-circle-off'
     })
   }
+
 }
 
 
@@ -50,6 +63,7 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
 
 <template>
   <UForm
+    ref="form"
     :schema="createTaskSchema"
     :state="state"
     class="space-y-4"
@@ -121,14 +135,37 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
       title="Issue requesting slurp"
     />
 
-    <UButton
+
+    <UFieldGroup
       :disabled="isLoadingConfig || !!configError"
       :loading="mutation.isPending.value"
-      color="info"
-      type="submit"
     >
-      <UIcon name="pepicons-pop:soft-drink"/>
-      Slurp Media
-    </UButton>
+      <UButton
+        color="info"
+        type="submit"
+        @click="submitAction = 'redirect'"
+      >
+        <UIcon name="pepicons-pop:soft-drink"/>
+        Slurp Media
+      </UButton>
+      <UDropdownMenu
+        :items="[
+          {
+            label: 'Queue in Background',
+            icon: 'pepicons-pop:arrow-right',
+            onSelect() {
+              submitAction = 'background'
+              form?.submit()
+            }
+          }
+        ]"
+      >
+        <UButton
+          color="info"
+          icon="i-lucide-chevron-down"
+          variant="soft"
+        />
+      </UDropdownMenu>
+    </UFieldGroup>
   </UForm>
 </template>
