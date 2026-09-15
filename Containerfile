@@ -1,3 +1,27 @@
+FROM node:24-slim AS frontend-build
+
+WORKDIR /app/frontend
+
+ARG VITE_APP_NAME
+ARG VITE_APP_ICON
+ARG VITE_APP_COPYRIGHT
+ARG NODE_ENV=production
+ENV VITE_APP_NAME="${VITE_APP_NAME}" \
+    VITE_APP_ICON="${VITE_APP_ICON}" \
+    VITE_APP_COPYRIGHT="${VITE_APP_COPYRIGHT}" \
+    NODE_ENV="${NODE_ENV}"
+
+RUN corepack enable
+
+# Copy lockfile-related files first so dependency install is cached independently of source changes
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
+RUN corepack use pnpm@12.4.1 && pnpm install --frozen-lockfile
+
+COPY frontend/ ./
+RUN pnpm build
+
+###############################################################################
+
 FROM python:3.14.2-slim-trixie AS app-build
 
 WORKDIR /app
@@ -76,11 +100,8 @@ ENV FLASK_DEBUG="${FLASK_DEBUG}" \
 COPY --from=denoland/deno:bin-2.8.2 /deno /usr/bin/deno
 
 COPY --chown=python:python --from=app-build /app/.venv /app/.venv
+COPY --chown=python:python --from=frontend-build /app/frontend/dist /app/frontend/dist
 COPY --chown=python:python . .
-
-# Static file compilation step - not presently used.
-#RUN if [ "${FLASK_DEBUG}" != "true" ]; then \
-#  ln -s /public /app/public && SECRET_KEY=dummy flask digest compile && rm -rf /app/public; fi
 
 ENTRYPOINT ["/app/deploy/cri/bin/entrypoint"]
 

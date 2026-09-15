@@ -1,5 +1,7 @@
 .venv
 instance/
+frontend/node_modules
+frontend/dist
 
 /tmp*
 
