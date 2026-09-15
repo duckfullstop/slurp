@@ -5,7 +5,7 @@ import {createSharedComposable, useEventSource} from '@vueuse/core'
  * `event` is `null` for a plain Fetch log line, or one of "task_created" / "metadata" / "fetch_updated".
  */
 export const useLiveEvents = createSharedComposable(() => useEventSource(
-  '/api/v1/stream',
+  '/api/v1/events',
   ['task_created', 'metadata', 'fetch_updated'],
   {
     autoReconnect: {
