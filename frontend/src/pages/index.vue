@@ -37,13 +37,18 @@ watch([liveData, liveEvent], ([raw, type]) => {
         variant="solid"
       />
     </p>
-    <UPageGrid v-else-if="data" class="flex-col-reverse">
-      <div v-for="task in data.slice().reverse()" :key="task.id">
+    <UPageGrid
+      v-else-if="data"
+      class="flex-col-reverse"
+    >
+      <div
+        v-for="task in data.slice().reverse()"
+        :key="task.id"
+      >
         <RouterLink :to="{name: '/fetch/[id]', params: {id: task.id}}">
-          <FetchCard v-bind="task"/>
+          <FetchCard :task="task"/>
         </RouterLink>
       </div>
-
     </UPageGrid>
   </UContainer>
 </template>

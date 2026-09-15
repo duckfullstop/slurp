@@ -2,5 +2,8 @@
 import imgSrc from '../../public/technoduck.svg'
 </script>
 <template>
-  <img :src="imgSrc" alt="technoduck"/>
+  <img
+    :src="imgSrc"
+    alt="technoduck"
+  >
 </template>

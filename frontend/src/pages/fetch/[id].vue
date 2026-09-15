@@ -88,16 +88,25 @@ if (data.value?.id) {
   </p>
   <div v-else-if="data">
     <UContainer>
-      <FetchCard :id="data.id" :slug="data.slug" :status="data.status" :ts_created="data.ts_created"
-                 :url="data.url" extended/>
-      <UStepper :color="timelineColor" :items="items" :model-value="data.status"
-                class="w-full pt-5" disabled orientation="horizontal"/>
+      <FetchCard
+        :task="data"
+        extended
+      />
+      <UStepper
+        :color="timelineColor"
+        :items="items"
+        :model-value="data.status"
+        class="w-full pt-5"
+        disabled
+        orientation="horizontal"
+      />
     </UContainer>
     <USeparator class="py-5"/>
     <UContainer>
-      <h2 class="text-4xl font-bold pb-2">Fetch Log</h2>
+      <h2 class="text-4xl font-bold pb-2">
+        Fetch Log
+      </h2>
       <FetchEventLog :id="data.id"/>
     </UContainer>
   </div>
-
 </template>
