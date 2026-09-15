@@ -1,8 +1,18 @@
 <script lang="ts" setup>
 import {useTasksQuery} from '../composables/useTasks'
+import {useLiveEvents} from '../composables/useLiveEvents'
+import {useQueryClient} from '@tanstack/vue-query'
+import {watch} from "vue";
 
 const {data, isLoading, error} = useTasksQuery()
 
+const queryClient = useQueryClient()
+const {data: liveData, event: liveEvent} = useLiveEvents()
+
+watch([liveData, liveEvent], ([raw, type]) => {
+  if (!raw || (type !== 'task_created' && type !== 'fetch_updated')) return
+  queryClient.invalidateQueries({queryKey: ['tasks']})
+})
 </script>
 
 <template>

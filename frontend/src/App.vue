@@ -4,6 +4,21 @@ import {useHead} from '@unhead/vue'
 import {useColorMode} from '@vueuse/core'
 import {VueQueryDevtools} from '@tanstack/vue-query-devtools'
 import AuthorLogo from "./components/AuthorLogo.vue";
+import {useLiveEvents} from "./composables/useLiveEvents";
+
+const {status: liveEventsStatus} = useLiveEvents()
+
+const liveEventsStatusText = computed(() => ({
+  OPEN: 'Live!',
+  CONNECTING: 'Connecting…',
+  CLOSED: 'No Connection'
+})[liveEventsStatus.value])
+
+const liveEventsStatusColor = computed(() => ({
+  OPEN: 'success',
+  CONNECTING: 'warning',
+  CLOSED: 'error'
+} as const)[liveEventsStatus.value])
 
 const colorMode = useColorMode()
 const isDev = import.meta.env.DEV
@@ -33,6 +48,9 @@ useHead({
         </template>
 
         <template #right>
+          <UBadge :color="liveEventsStatusColor" :label="liveEventsStatusText" :ui="{
+              base: '-right-2'
+            }"/>
           <UColorModeButton/>
         </template>
       </UHeader>
