@@ -32,8 +32,13 @@ let taskSlugTrailing = computed(() => {
 
 </script>
 <template>
-  <UChip :color="highlightColor" :text="task.status" :ui="{base: 'p-2 pl-3 ring-0 rounded-t-none rounded-r-none'}" inset
-         size="3xl">
+  <UChip
+    :color="highlightColor"
+    :text="task.status"
+    :ui="{base: 'p-2 pl-3 ring-0 rounded-t-none rounded-r-none'}"
+    inset
+    size="3xl"
+  >
     <UPageCard
       :highlight-color="highlightColor"
       highlight
@@ -57,15 +62,16 @@ let taskSlugTrailing = computed(() => {
             color="neutral"
           >
             <UIcon name="material-symbols:description"/>
-            <span
-            >
+            <span>
               {{ taskSlugTrailing }}
             </span>
           </UBadge>
         </div>
       </template>
       <template #description>
-        <p class="wrap-anywhere">{{ task.url }}</p>
+        <p class="wrap-anywhere">
+          {{ task.url }}
+        </p>
       </template>
       <template #footer>
         <div class="space-x-1 flex items-center justify-center">
@@ -82,11 +88,11 @@ let taskSlugTrailing = computed(() => {
                 v-if="props.extended"
                 class="text-muted"
               >
-              {{ task.id.slice(0, -4) }}
-            </span>
+                {{ task.id.slice(0, -4) }}
+              </span>
               <span class="font-bold">
-              {{ task.id.slice(-4) }}
-            </span>
+                {{ task.id.slice(-4) }}
+              </span>
             </UBadge>
           </UTooltip>
           <UBadge
