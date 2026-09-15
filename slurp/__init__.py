@@ -2,8 +2,9 @@ import os
 import tomllib
 
 from celery import Celery, Task
-from flask import Flask, request, stream_with_context
+from flask import Flask, app, request, stream_with_context
 from flask_sse import sse
+from flask_vite import Vite
 
 from slurp.api import api_blueprint
 from slurp.db import bind_redis
@@ -65,8 +66,14 @@ def __register_sse_stream(app: Flask) -> None:
 
 def create_app(config_filename: str = "config.toml") -> Flask:
     """Application factory."""
-    app = Flask(__name__)
-
+    app = Flask(
+        __name__,
+        static_folder="../frontend/dist/static",
+        template_folder="../frontend/dist",
+    )
+    app.config["VITE_FOLDER_PATH"] = "frontend"
+    vite = Vite()
+    vite.init_app(app)
     # Load configuration.
     # First load the default config module, then any config file, then overload the environment.
 

@@ -34,6 +34,7 @@ dependencies = [
     "flask-redis>=0.4.0",
     "redis-om>=1.1.0",
     "flask-sse>=1.0.0",
+    "flask-vite>=0.6.1",
 ]
 
 [project.scripts]

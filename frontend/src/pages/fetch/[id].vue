@@ -6,6 +6,7 @@ import {useQueryClient} from '@tanstack/vue-query'
 import type {Task} from '../../api/tasks'
 import {computed, watch} from "vue"
 import {StepperItem} from "@nuxt/ui";
+import {useTitle} from "@vueuse/core";
 
 const route = useRoute<'/fetch/[id]'>()
 const {data, isLoading, error} = useTaskQuery(() => route.params.id)
@@ -59,6 +60,12 @@ const items = computed<StepperItem[]>(() => [
 ])
 
 const timelineColor = computed(() => data.value?.status === 'failed' ? 'error' : 'success')
+
+const title = useTitle()
+if (data.value?.id) {
+  title.value = "Slurp " + data.value?.id.slice(-4)
+}
+
 </script>
 
 <template>
