@@ -5,10 +5,12 @@ import {useColorMode, useFavicon} from '@vueuse/core'
 import {VueQueryDevtools} from '@tanstack/vue-query-devtools'
 import AuthorLogo from "./components/AuthorLogo.vue";
 import {useLiveEvents} from "./composables/useLiveEvents";
+import {useNotifier} from "./composables/useNotifier.ts";
 
 import favicon from "../public/favicon.ico";
 
 const {status: liveEventsStatus} = useLiveEvents()
+useNotifier()
 
 const liveEventsStatusText = computed(() => ({
   OPEN: 'Live!',
