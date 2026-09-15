@@ -80,6 +80,8 @@ jobs:
           working-directory: frontend
           runtime: node@26
           cache: true
+      - name: Build (generate auto-import type declarations)
+        run: pnpm run build
       - name: Run typecheck
         run: pnpm run typecheck
 
