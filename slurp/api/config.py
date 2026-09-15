@@ -8,4 +8,10 @@ api = Namespace("config", description="Application configuration")
 class Config(Resource):
     @api.doc("config")
     def get(self):
-        return {"outputs": current_app.config["OUTPUTS"]}
+        fetchers_formatted = {}
+        for fetcher in current_app.extensions["fetchers"].get_all():
+            fetchers_formatted[fetcher.name] = {"services": fetcher.service_names}
+        return {
+            "fetchers": fetchers_formatted,
+            "outputs": current_app.config["OUTPUTS"],
+        }
