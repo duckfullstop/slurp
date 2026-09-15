@@ -1,11 +1,34 @@
 <script lang="ts" setup>
 import {useRoute} from 'vue-router'
 import {useTaskQuery} from '../../composables/useTasks'
+import {useLiveEvents} from '../../composables/useLiveEvents'
+import {useQueryClient} from '@tanstack/vue-query'
+import type {Task} from '../../api/tasks'
 import {TimelineItem} from "@nuxt/ui"
-import {computed} from "vue"
+import {computed, watch} from "vue"
 
 const route = useRoute<'/fetch/[id]'>()
 const {data, isLoading, error} = useTaskQuery(() => route.params.id)
+
+const queryClient = useQueryClient()
+const {data: liveData, event: liveEvent} = useLiveEvents()
+
+watch([liveData, liveEvent], ([raw, type]) => {
+  if (!raw || (type !== 'metadata' && type !== 'fetch_updated')) return
+  const payload = JSON.parse(raw)
+  if (payload.fetch_id !== route.params.id) return
+
+  const key = ['task', route.params.id]
+  if (type === 'metadata') {
+    queryClient.setQueryData<Task>(key, (old) => old && {...old, meta: JSON.parse(payload.meta)})
+  } else {
+    queryClient.setQueryData<Task>(key, (old) => old && {
+      ...old,
+      status: payload.state,
+      output_path: payload.path ?? old.output_path
+    })
+  }
+})
 
 const items = computed<TimelineItem[]>(() => [
   {

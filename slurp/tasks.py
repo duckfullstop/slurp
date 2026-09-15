@@ -134,13 +134,6 @@ def fetch(self: Task, pk: str):
                     self.update_state(
                         event=f"{'Trying Fetch again' if idx > 0 else 'Fetching'} with {fetcher.name}"
                     )
-                    sse.publish(
-                        {
-                            "fetch_id": task.pk,
-                            "message": f"{'Trying Fetch again' if idx > 0 else 'Fetching'} with {fetcher.name}",
-                        },
-                        type="message",
-                    )
                     task.emit_event(
                         "log",
                         "info",

@@ -2,7 +2,10 @@
 
 import {computed, ref, useTemplateRef, watch} from "vue";
 import {useScroll} from "@vueuse/core";
+import {useQueryClient} from "@tanstack/vue-query";
 import {useTaskEventsQuery} from "../composables/useTasks.ts";
+import {useLiveEvents} from "../composables/useLiveEvents";
+import type {FetchEvent} from "../api/tasks";
 import FetchEventLogEntry from "./FetchEventLogEntry.vue";
 
 const props = defineProps<{
@@ -10,6 +13,16 @@ const props = defineProps<{
 }>()
 
 const {data, isLoading, error} = useTaskEventsQuery(() => props.id)
+
+const queryClient = useQueryClient()
+const {data: liveData, event: liveEvent} = useLiveEvents()
+
+watch([liveData, liveEvent], ([raw, type]) => {
+  if (!raw || type !== null) return
+  const logEvent = JSON.parse(raw) as FetchEvent
+  if (logEvent.fetch_id !== props.id) return
+  queryClient.setQueryData<FetchEvent[]>(['taskEvents', props.id], (old) => [...(old ?? []), logEvent])
+})
 
 const scrollAreaRef = useTemplateRef("scrollAreaRef")
 const scrollEl = computed(() => scrollAreaRef.value?.$el)
