@@ -87,8 +87,10 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
       title="Issue requesting slurp"
     />
 
-    <UButton :loading="mutation.isPending.value" color="info" type="submit">
-      🥤 Slurp Media
+    <UButton :disabled="isLoadingConfig || !!configError" :loading="mutation.isPending.value" color="info"
+             type="submit">
+      <UIcon name="pepicons-pop:soft-drink"/>
+      Slurp Media
     </UButton>
   </UForm>
 </template>

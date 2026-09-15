@@ -12,10 +12,20 @@ const {data, isLoading, error} = useTasksQuery()
   <USeparator class="py-5"/>
   <UContainer>
     <p v-if="isLoading">
-      Loading...
+      <UPageGrid class="flex-col">
+        <USkeleton class="h-40 w-100"/>
+        <USkeleton class="h-40 w-100"/>
+        <USkeleton class="h-40 w-100"/>
+      </UPageGrid>
     </p>
     <p v-else-if="error">
-      Error: {{ error.message }}
+      <UAlert
+        :description="error.message"
+        color="error"
+        icon="pepicons-pop:exclamation-circle-filled"
+        title="Error loading Fetch Tasks"
+        variant="solid"
+      />
     </p>
     <UPageGrid v-else-if="data" class="flex-col-reverse">
       <div v-for="task in data.slice().reverse()" :key="task.id">
