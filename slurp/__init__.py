@@ -2,7 +2,7 @@ import os
 import tomllib
 
 from celery import Celery, Task
-from flask import Flask
+from flask import Flask, request, stream_with_context
 from flask_sse import sse
 
 from slurp.api import api_blueprint
@@ -38,6 +38,29 @@ def __celery_init_app(app: Flask) -> Celery:
     # Bind periodic tasks
     celery_app.on_after_configure.connect(_init_periodic_tasks)
     return celery_app
+
+
+def __register_sse_stream(app: Flask) -> None:
+    """
+    flask-sse's own stream view (registered below as the "sse" blueprint, kept for backwards
+    compatibility with the legacy Jinja templates) blocks on Redis pubsub.listen() before it
+    yields anything, which means a WSGI server won't flush the response - not even the headers -
+    until the first event is published. Any client that connects before that happens sees what
+    looks like a hung connection. This is the same stream, just with an SSE comment yielded
+    immediately to force the response to flush straight away - use this for new clients.
+    """
+
+    @app.route("/api/v1/events")
+    def live_events():
+        channel = request.args.get("channel") or "sse"
+
+        @stream_with_context
+        def generator():
+            yield ": connected\n\n"
+            for message in sse.messages(channel=channel):
+                yield str(message)
+
+        return app.response_class(generator(), mimetype="text/event-stream")
 
 
 def create_app(config_filename: str = "config.toml") -> Flask:
@@ -89,6 +112,8 @@ def create_app(config_filename: str = "config.toml") -> Flask:
     app.jinja_env.filters["duration"] = format_duration
 
     app.register_blueprint(sse, url_prefix="/api/v1/stream")
+
+    __register_sse_stream(app)
 
     app.register_blueprint(main_blueprint)
 
