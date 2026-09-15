@@ -1,5 +1,6 @@
 {
   "name": "frontend",
+  "version": "v2026.9.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@tanstack/vue-query-devtools": "^6.1.48",
+    "@types/node": "^26.6.0",
     "@vitejs/plugin-vue": "^6.0.8",
     "eslint": "^10.10.0",
     "eslint-plugin-vue": "^10.11.0",
