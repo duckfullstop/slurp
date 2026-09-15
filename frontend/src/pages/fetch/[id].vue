@@ -4,8 +4,8 @@ import {useTaskQuery} from '../../composables/useTasks'
 import {useLiveEvents} from '../../composables/useLiveEvents'
 import {useQueryClient} from '@tanstack/vue-query'
 import type {Task} from '../../api/tasks'
-import {TimelineItem} from "@nuxt/ui"
 import {computed, watch} from "vue"
+import {StepperItem} from "@nuxt/ui";
 
 const route = useRoute<'/fetch/[id]'>()
 const {data, isLoading, error} = useTaskQuery(() => route.params.id)
@@ -30,9 +30,9 @@ watch([liveData, liveEvent], ([raw, type]) => {
   }
 })
 
-const items = computed<TimelineItem[]>(() => [
+const items = computed<StepperItem[]>(() => [
   {
-    title: 'Fetch Created',
+    title: 'Created',
     description: 'Awaiting assignment to a Worker.',
     icon: 'i-lucide-rocket',
     value: 'created'
@@ -45,13 +45,13 @@ const items = computed<TimelineItem[]>(() => [
   },
   data.value?.status === 'failed'
     ? {
-      title: 'Failed.',
+      title: 'Failed',
       description: 'The fetch failed. Check the logs.',
       icon: 'pepicons-pop:exclamation',
       value: 'failed'
     }
     : {
-      title: 'Complete.',
+      title: 'Complete',
       description: 'The fetch is complete.',
       icon: 'pepicons-pop:checkmark',
       value: 'success'
@@ -83,8 +83,8 @@ const timelineColor = computed(() => data.value?.status === 'failed' ? 'error' :
     <UContainer>
       <FetchCard :id="data.id" :slug="data.slug" :status="data.status" :ts_created="data.ts_created"
                  :url="data.url" extended/>
-      <UTimeline :color="timelineColor" :items="items" :model-value="data.status"
-                 class="w-full pt-5" orientation="horizontal"/>
+      <UStepper :color="timelineColor" :items="items" :model-value="data.status"
+                class="w-full pt-5" disabled orientation="horizontal"/>
     </UContainer>
     <USeparator class="py-5"/>
     <UContainer>
