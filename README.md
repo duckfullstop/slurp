@@ -1,20 +1,28 @@
 <h1 align="center">🥤 Slurp</h1>
 <p align="center"><b>A web media ingest utility, built with broadcast environments in mind.</b></p>
 
+<h3 align="center">_Made possible by..._</h>
+<p align="center">
+<img src="docs/static/img/CBS_News_logo_(2020).svg" width="256"></img>
+</p>
+
+___
+
 ## What is Slurp?
 
 _Slurp_ is your media organization's gateway for fetching web audio and video, and getting it into your existing
 production ingest workflows.
 
-At its core, it simply gets the media from a given URL, then outputs it into a folder along with a chosen filename.
-The power is that you can then automate into your existing workflows, such
+At its core, it simply gets the media from a given URL, then outputs it into a folder along with a chosen filename. The
+power is that you can then automate into your existing workflows, such
 as [Telestream Vantage](https://www.telestream.com/vantage/), to produce a seamless experience for your team.
 
 Thanks to its queue-based architecture, _Slurp_ can scale from small, infrequently-used deployments, to enormous scale
 with multiple downloads simultaneously being executed.
 
-_Slurp_ is built with international broadcast and MCR teams in mind - all times are in UTC, and there's a rapidly
-growing REST API that you can use for integration into your own systems to query state, enqueue new jobs, and more.
+_Slurp_ is built with international broadcast and MCR teams in mind - all times are in UTC, and there's a full REST API
+consumed by the frontend that you can use for integration into your own systems to query state, enqueue new jobs, and
+more.
 
 ## Deployment
 
@@ -57,8 +65,8 @@ is running at a time.
 First, ensure that you have downloaded _slurp_ to a directory on your system (e.g `/usr/local/slurp`).
 
 Next, make sure all dependencies are available (see "Development" below), and that uv has configured a venv at
-`.venv`.
-Also ensure that a valid configuration file is available at `config.toml` (see [Configuration](#Configuration)).
+`.venv`. Also ensure that a valid configuration file is available at `config.toml`
+(see [Configuration](#Configuration)).
 
 Copy the service file located at [deploy/systemd/slurp.service](deploy/systemd/slurp.service) to your
 `/etc/systemd/system` directory.
@@ -77,6 +85,8 @@ ___
 - [Python 3](https://www.python.org/)
 - [Javascript runtime](https://github.com/yt-dlp/yt-dlp/wiki/EJS)
 - [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- [node 26 or newer](https://nodejs.org)
+- [pnpm](pnpm.io)
 
 For the YT-DLP fetcher:
 
@@ -97,7 +107,14 @@ For the YT-DLP fetcher:
 $ uv sync --locked --all-extras
 ```
 
-### Run the development server:
+### Install Frontend dependencies:
+
+```bash
+$ cd frontend/
+$ pnpm install
+```
+
+### Run the backend development server:
 
 > [!CAUTION]
 > Do not expose the development server in production!
@@ -117,8 +134,17 @@ celery -A slurp.make_celery:celery worker -Q celery,fetch
 ```
 
 You might want to run separate celery and fetch workers so you don't end up with a blocked queue (which can stop new
-tasks from being created over the REST API).
-To do that, just run two Celery worker instances: one with `-Q celery` and one with `-Q fetch`.
+tasks from being created over the REST API). To do that, just run two Celery worker instances: one with `-Q celery` and
+one with `-Q fetch`.
+
+### Run the Frontend development server
+
+**This includes hot reload.**
+
+```bash
+$ cd frontend/
+$ pnpm run dev
+```
 
 ### Notes on Developing Slurp
 
@@ -138,14 +164,13 @@ The currently available fetchers are as follows:
 
 #### YT-DLP
 
-The YT-DLP fetcher reliably grabs media directly from YouTube (and YouTube alone) to your target.
-It does not _require_ any extra setup, but you'll receive a warning if a JavaScript runtime isn't available.
+The YT-DLP fetcher reliably grabs media directly from YouTube (and YouTube alone) to your target. It does not _require_
+any extra setup, but you'll receive a warning if a JavaScript runtime isn't available.
 
 The compatible runtimes are listed here: https://github.com/yt-dlp/yt-dlp/wiki/EJS
 
 If `deno` is available on the system path, it should be detected automatically. Otherwise, set the
-`FETCHER_YTDLP_JS_RUNTIMES` flag with the path to the runtime binary, like
-so:
+`FETCHER_YTDLP_JS_RUNTIMES` flag with the path to the runtime binary, like so:
 
 ```toml
 FETCHER_YTDLP_JS_RUNTIMES = '{"node": {"path": "/usr/bin/node"}}'
@@ -164,9 +189,12 @@ FETCHER_YTDLP_EXTRACTOR_ARGS = "{'youtube': {'player_client': ['web_embedded', '
 
 #### get_iplayer
 
+> [!WARNING]
+> The get_iplayer fetcher is deprecated. `yt_dlp` does a much better job.
+
 The _get\_iplayer_ fetcher grabs media in up to HD quality using an installed copy
-of [get_iplayer](https://github.com/get-iplayer/get_iplayer/tree/master).
-It's up to you to ensure `get_iplayer` is available on your system to be called by _Slurp_.
+of [get_iplayer](https://github.com/get-iplayer/get_iplayer/tree/master). It's up to you to ensure `get_iplayer` is
+available on your system to be called by _Slurp_.
 
 > [!IMPORTANT]
 > This is quite a rudimentary fetcher, and may be replaced / removed at a later date.
@@ -228,9 +256,10 @@ FETCHER_COBALT_KEY = "random-uuidv4-goes-here"
 
 ## Sponsors
 
-In the interest of transparency, _Slurp_ is made possible thanks to funding from CBS News.
+_Slurp_ is made possible thanks to the generous funding and support of CBS News.
 
-<img src="docs/static/img/CBS_News_logo_(2020).svg" width="256"></img>
+If you're using _Slurp_ in a commercial setting, and would like it moulded to fit how your workflow works, please do
+reach out via [@duckfullstop's profile page](https://github.com/duckfullstop) - it would be great to work together!
 
 ## License
 
