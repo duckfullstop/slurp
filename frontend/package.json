@@ -11,6 +11,7 @@
     "typecheck": "vue-tsc -p ./tsconfig.app.json"
   },
   "dependencies": {
+    "@date-fns/utc": "^2.1.1",
     "@nuxt/ui": "^4.11.1",
     "@tanstack/vue-query": "^5.102.8",
     "@unhead/vue": "^3.4.0",
@@ -36,7 +37,7 @@
   "devEngines": {
     "runtime": {
       "name": "node",
-      "version": "^26.0.0",
+      "version": "^26.8.0",
       "onFail": "download"
     }
   }

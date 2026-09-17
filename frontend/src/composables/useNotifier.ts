@@ -10,6 +10,16 @@ export function useNotifier() {
 
   const notifyPermission = usePermission('notifications')
 
+  const {
+    isSupported,
+    permissionGranted,
+    show,
+  } = useWebNotification({
+    lang: 'en',
+    renotify: true,
+    tag: 'slurp',
+  })
+
   watch([data, event], ([raw, type]) => {
     if (type !== 'fetch_updated' || !raw) return
     const update = JSON.parse(raw) as FetchUpdatedEvent
@@ -35,20 +45,12 @@ export function useNotifier() {
       icon: icon,
       color: color
     })
-    const {
-      isSupported,
-      permissionGranted,
-      show,
-    } = useWebNotification({
-      title: 'Hello, VueUse world!',
-      dir: 'auto',
-      lang: 'en',
-      renotify: true,
-      tag: 'test',
-    })
 
     if (notifyPermission.value && isSupported.value && permissionGranted.value) {
-      show()
+      show({
+        title: title,
+        body: body
+      })
     }
 
   })

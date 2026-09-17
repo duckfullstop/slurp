@@ -106,7 +106,7 @@ if (data.value?.id) {
       <h2 class="text-4xl font-bold pb-2">
         Fetch Log
       </h2>
-      <FetchEventLog :id="data.id"/>
+      <FetchEventLog :id="data.id" :live="!['success', 'failed'].includes(data.status)"/>
     </UContainer>
   </div>
 </template>
