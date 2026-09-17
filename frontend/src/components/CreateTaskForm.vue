@@ -32,6 +32,9 @@ watch(config, (newConfig) => {
 }, {immediate: true})
 
 async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
+  // Reset the submitAction state, otherwise the redirect button doesn't do what you expect on subsequent clicks.
+  const action = submitAction.value
+  submitAction.value = 'redirect'
   try {
     const response = await mutation.mutateAsync(event.data)
     toast.add({
@@ -44,7 +47,7 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
     state.format = 'VIDEO_AUDIO'
     state.target = config.value?.outputs?.[0]
 
-    if (submitAction.value === 'redirect') {
+    if (action === 'redirect') {
       router.push({name: '/fetch/[id]', params: {id: response.fetch_id}})
     }
   } catch (error: unknown) {

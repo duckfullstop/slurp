@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import {FetchEvent} from "../api/tasks.ts";
 import {computed} from "vue";
-import {format} from "date-fns";
+import {format, parseJSON} from "date-fns";
+import {utc} from "@date-fns/utc";
 
 const props = defineProps<{
   event: FetchEvent
@@ -23,6 +24,8 @@ let highlightColor = computed(() => {
       return ''
   }
 })
+
+const tsCreatedUTC = computed(() => (format(parseJSON(props.event.ts_created), 'yyyy-MM-dd HH:mm', {in: utc})))
 </script>
 
 <template>
@@ -35,7 +38,7 @@ let highlightColor = computed(() => {
   >
     <div class="flex flex-row flex-wrap space-x-5">
       <div class="flex-none sm:basis-full md:basis-auto">
-        {{ format(event.ts_created, 'yyyy-MM-dd HH:MM') }} UTC
+        {{ tsCreatedUTC }} UTC
       </div>
       <!-- TODO this doesn't wrap right on smaller displays. -->
       <div

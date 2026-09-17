@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import {format} from "date-fns";
+import {format, parseJSON} from "date-fns";
 import {computed} from "vue";
 import {Task} from "../api/tasks.ts";
+import {utc} from "@date-fns/utc";
 
 const props = defineProps<{
   task: Task,
@@ -29,6 +30,8 @@ let taskSlugTrailing = computed(() => {
   // fun and interesting way of getting everything after the first space
   return props.task.slug.split(' ').slice(1).join(' ')
 })
+
+const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'yyyy-MM-dd HH:mm', {in: utc})))
 
 </script>
 <template>
@@ -101,7 +104,7 @@ let taskSlugTrailing = computed(() => {
             variant="outline"
           >
             <UIcon name="pepicons-pop:clock"/>
-            {{ format(task.ts_created, 'yyyy-MM-dd HH:MM') }} UTC
+            {{ tsCreatedUTC }} UTC
           </UBadge>
         </div>
       </template>

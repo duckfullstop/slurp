@@ -10,6 +10,7 @@ import FetchEventLogEntry from "./FetchEventLogEntry.vue";
 
 const props = defineProps<{
   id: string
+  live?: boolean
 }>()
 
 const {data, isLoading, error} = useTaskEventsQuery(() => props.id)
@@ -78,7 +79,7 @@ function jumpToLive() {
       <USeparator/>
     </UScrollArea>
     <UBadge
-      v-if="stickToBottom"
+      v-if="stickToBottom && live"
       class="absolute bottom-0 right-4 z-10 items-center gap-1.5 rounded-b-none"
       color="success"
       variant="subtle"
@@ -94,7 +95,7 @@ function jumpToLive() {
       variant="subtle"
       @click="jumpToLive"
     >
-      Paused — jump to latest
+      {{ live ? "Paused — jump to latest" : "Jump to end" }}
     </UButton>
   </div>
 </template>
