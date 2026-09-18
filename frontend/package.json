@@ -13,19 +13,19 @@
   "dependencies": {
     "@date-fns/utc": "^2.1.1",
     "@nuxt/ui": "^4.11.1",
-    "@tanstack/vue-query": "^5.102.8",
-    "@unhead/vue": "^3.4.0",
+    "@tanstack/vue-query": "^5.103.1",
+    "@unhead/vue": "^3.4.1",
     "@vueuse/core": "^14.4.0",
     "date-fns": "^4.4.0",
     "tailwindcss": "^4.3.3",
-    "vue": "^3.5.42",
+    "vue": "^3.5.43",
     "vue-router": "^5.3.1",
-    "zod": "^4.6.4"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@tanstack/vue-query-devtools": "^6.1.48",
-    "@types/node": "^26.6.0",
-    "@vitejs/plugin-vue": "^6.0.8",
+    "@tanstack/vue-query-devtools": "^6.2.1",
+    "@types/node": "^26.6.1",
+    "@vitejs/plugin-vue": "^6.0.9",
     "eslint": "^10.10.0",
     "eslint-plugin-vue": "^10.11.0",
     "typescript": "^6.0.3",
@@ -37,7 +37,7 @@
   "devEngines": {
     "runtime": {
       "name": "node",
-      "version": "^24.0.0",
+      "version": "^26.0.0",
       "onFail": "download"
     }
   }
