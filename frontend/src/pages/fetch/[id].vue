@@ -109,7 +109,10 @@ if (data.value?.id) {
       <h2 class="text-4xl font-bold pb-2">
         Fetch Log
       </h2>
-      <FetchEventLog :id="data.id" :live="!['success', 'failed'].includes(data.status)"/>
+      <FetchEventLog v-if="!data.purged" :id="data.id" :live="!['success', 'failed'].includes(data.status)"/>
+      <UAlert v-else color="info"
+              description="The Fetch Log for this Fetch has been purged after expiry."
+              icon="material-symbols:bomb"/>
     </UContainer>
   </div>
 </template>

@@ -75,11 +75,11 @@ const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'y
         </div>
       </template>
       <template #description>
-        <span class="flex items-center gap-x-1">
+        <span v-if="task.meta.name" class="flex items-center gap-x-1">
           <UIcon name="material-symbols:article-person"/>
           {{ task.meta.name }}
         </span>
-        <span v-if="extended" class="flex items-center gap-x-1">
+        <span v-if="extended && task.meta.author" class="flex items-center gap-x-1">
           <UIcon name="material-symbols:article-person"/>
           <a :href="task.meta.author_url">{{ task.meta.author }}</a>
         </span>
@@ -131,6 +131,24 @@ const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'y
           >
             <UIcon name="pepicons-pop:clock"/>
             {{ tsCreatedUTC }} UTC
+          </UBadge>
+          <UBadge
+            v-if="task.purged"
+            class="align-self-center"
+            color="error"
+            variant="outline"
+          >
+            <UIcon name="material-symbols:skull"/>
+            Logs Expired
+          </UBadge>
+          <UBadge
+            v-else-if="task.pruned"
+            class="align-self-center"
+            color="warning"
+            variant="outline"
+          >
+            <UIcon name="material-symbols:auto-delete"/>
+            Data Removed
           </UBadge>
         </div>
       </template>
