@@ -24,3 +24,7 @@ venv/
 celerybeat-*
 
 /tmp*
+
+# no, we don't want any AI bullshit, stop trying intellij
+.mcp.json
+.claude
