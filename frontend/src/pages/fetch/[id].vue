@@ -88,10 +88,13 @@ if (data.value?.id) {
   </p>
   <div v-else-if="data">
     <UContainer class="flex flex-col items-center">
-      <FetchCard
-        :task="data"
-        extended
-      />
+      <UContainer class="flex items-center flex-col md:flex-row justify-center gap-10">
+        <img :src="data.meta.thumbnail_url" class="block-40 rounded-lg">
+        <FetchCard
+          :task="data"
+          extended
+        />
+      </UContainer>
       <UStepper
         :color="timelineColor"
         :items="items"

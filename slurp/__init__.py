@@ -14,15 +14,28 @@ from slurp.routes import main_blueprint
 from slurp.tasks import _init_periodic_tasks
 
 
+class _FlaskTask(Task):
+    flask_app: Flask
+
+    def __call__(self, *args: object, **kwargs: object) -> object:
+        with self.flask_app.app_context():
+            return self.run(*args, **kwargs)
+
+
 def __celery_init_app(app: Flask) -> Celery:
-    class FlaskTask(Task):
-        def __call__(self, *args: object, **kwargs: object) -> object:
-            with app.app_context():
-                return self.run(*args, **kwargs)
+    # Celery's worker pool needs to be able to pickle the Celery app (including task_cls) when
+    # using the "spawn" process start method - a class nested inside this function is a local
+    # object and can't be pickled, so FlaskTask has to live at module scope instead. The Flask
+    # app is set as a class attribute rather than captured in a closure: Celery.__reduce__
+    # rebuilds a brand new Celery app from a fixed set of constructor kwargs on unpickling, so
+    # anything hung off the app instance itself (e.g. celery_app.flask_app) would be dropped.
+    # Resolving _FlaskTask by reference instead forces each spawned worker process to re-import
+    # this module, which re-runs create_app() (see make_celery.py) and sets this fresh.
+    _FlaskTask.flask_app = app
 
     celery_app = Celery(
         app.name,
-        task_cls=FlaskTask,
+        task_cls=_FlaskTask,
         broker=app.config["REDIS_URL"],
         result_backend=app.config["REDIS_URL"],
     )

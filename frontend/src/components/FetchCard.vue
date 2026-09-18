@@ -3,10 +3,12 @@ import {format, parseJSON} from "date-fns";
 import {computed} from "vue";
 import {Task} from "../api/tasks.ts";
 import {utc} from "@date-fns/utc";
+import {floor} from "lib0/math";
 
 const props = defineProps<{
   task: Task,
-  extended?: boolean
+  extended?: boolean,
+  fullWidth?: boolean,
 }>()
 
 let highlightColor = computed(() => {
@@ -38,12 +40,13 @@ const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'y
   <UChip
     :color="highlightColor"
     :text="task.status"
-    :ui="{base: 'p-2 pl-3 ring-0 rounded-t-none rounded-r-none'}"
+    :ui="{base: 'p-2 pl-3 ring-0 rounded-t-none rounded-r-none', root: fullWidth? 'flex w-full' : ''}"
     inset
     size="3xl"
   >
     <UPageCard
       :highlight-color="highlightColor"
+      class="w-full"
       highlight
     >
       <template #title>
@@ -72,9 +75,32 @@ const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'y
         </div>
       </template>
       <template #description>
-        <p class="wrap-anywhere">
+        <span class="flex items-center gap-x-1">
+          <UIcon name="material-symbols:article-person"/>
+          {{ task.meta.name }}
+        </span>
+        <span v-if="extended" class="flex items-center gap-x-1">
+          <UIcon name="material-symbols:article-person"/>
+          <a :href="task.meta.author_url">{{ task.meta.author }}</a>
+        </span>
+        <span class="flex items-center gap-x-1 wrap-anywhere">
+          <UIcon name="material-symbols:media-link"/>
           {{ task.url }}
-        </p>
+        </span>
+        <UBadge
+          v-if="task.meta.duration && extended"
+          color="neutral"
+          variant="outline"
+        >
+          <UIcon name="material-symbols:timer-play"/>
+          <template v-if="task.meta.duration > 60">
+            {{ floor(task.meta.duration / 60) }}:{{ floor(task.meta.duration % 60) }}
+          </template>
+          <template v-else>
+            {{ task.meta.duration }} seconds
+          </template>
+        </UBadge>
+
       </template>
       <template #footer>
         <div class="space-x-1 flex items-center justify-center">
