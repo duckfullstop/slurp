@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import {reactive, ref, watch} from 'vue'
-import type {Form, FormSubmitEvent} from '@nuxt/ui'
-import {useConfigQuery, useCreateTaskMutation} from '../composables/useTasks'
+import {computed, reactive, ref, watch} from 'vue'
+import type {Form, FormSubmitEvent, SelectItem} from '@nuxt/ui'
+import {useCreateTaskMutation} from '../composables/useTasks'
 import {type CreateTaskInput, createTaskSchema, FORMAT_OPTIONS} from '../schemas/createTask'
 import {useRouter} from "vue-router";
+import {useConfigQuery} from "../composables/useConfig.ts";
 
 const toast = useToast()
 
@@ -25,9 +26,14 @@ const state = reactive<Partial<CreateTaskInput>>({
   target: undefined
 })
 
+const targetOptions = computed<SelectItem[]>(() =>
+  Object.entries(config.value?.outputs ?? {}).map(([value, label]) => ({value, label}))
+)
+
 watch(config, (newConfig) => {
-  if (!state.target && newConfig?.outputs?.length) {
-    state.target = newConfig.outputs[0]
+  if (!state.target && newConfig?.outputs) {
+    const [firstTarget] = Object.keys(newConfig.outputs)
+    if (firstTarget) state.target = firstTarget
   }
 }, {immediate: true})
 
@@ -45,7 +51,7 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
     state.url = undefined
     state.slug = undefined
     state.format = 'VIDEO_AUDIO'
-    state.target = config.value?.outputs?.[0]
+    state.target = Object.keys(config.value?.outputs ?? {})[0]
 
     if (action === 'redirect') {
       router.push({name: '/fetch/[id]', params: {id: response.fetch_id}})
@@ -118,7 +124,7 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
       <USelect
         v-model="state.target"
         :disabled="isLoadingConfig || !!configError"
-        :items="config?.outputs ?? []"
+        :items="targetOptions"
         :loading="isLoadingConfig"
         class="w-full"
         placeholder="Select a target output directory"

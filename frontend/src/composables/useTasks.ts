@@ -1,6 +1,6 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/vue-query'
 import {computed, type MaybeRefOrGetter, toValue} from 'vue'
-import {createTask, fetchConfig, fetchTask, fetchTaskEvents, fetchTasks} from '../api/tasks'
+import {createTask, fetchTask, fetchTaskEvents, fetchTasks} from '../api/tasks'
 
 export function useTasksQuery() {
   return useQuery({
@@ -22,13 +22,6 @@ export function useTaskEventsQuery(taskId: MaybeRefOrGetter<string>) {
     queryKey: ['taskEvents', taskId],
     queryFn: () => fetchTaskEvents(toValue(taskId)),
     enabled: computed(() => !!toValue(taskId))
-  })
-}
-
-export function useConfigQuery() {
-  return useQuery({
-    queryKey: ['outputs'],
-    queryFn: fetchConfig
   })
 }
 
