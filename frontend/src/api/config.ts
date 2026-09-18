@@ -9,6 +9,8 @@ export interface AppConfig {
   fetchers: {
     [key: string]: AppConfigFetcher
   }
+  purge: number
+  prune: number
 }
 
 export async function fetchConfig(): Promise<AppConfig> {

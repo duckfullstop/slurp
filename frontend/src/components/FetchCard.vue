@@ -4,6 +4,7 @@ import {computed} from "vue";
 import {Task} from "../api/tasks.ts";
 import {utc} from "@date-fns/utc";
 import {floor} from "lib0/math";
+import {getSafeUrl} from "../utils/url.ts";
 
 const props = defineProps<{
   task: Task,
@@ -33,7 +34,9 @@ let taskSlugTrailing = computed(() => {
   return props.task.slug.split(' ').slice(1).join(' ')
 })
 
-const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'yyyy-MM-dd HH:mm', {in: utc})))
+const tsCreatedUTC = computed(() => format(parseJSON(props.task.ts_created), 'yyyy-MM-dd HH:mm', {in: utc}))
+
+const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
 
 </script>
 <template>
@@ -55,7 +58,7 @@ const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'y
             class="text-1xl"
             color="neutral"
           >
-            <UIcon name="material-symbols:snail"/>
+            <UIcon name="material-symbols:snail" />
             <span
               class="font-bold"
             >
@@ -67,7 +70,7 @@ const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'y
             class="text-1xl"
             color="neutral"
           >
-            <UIcon name="material-symbols:description"/>
+            <UIcon name="material-symbols:description" />
             <span>
               {{ taskSlugTrailing }}
             </span>
@@ -75,16 +78,27 @@ const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'y
         </div>
       </template>
       <template #description>
-        <span v-if="task.meta.name" class="flex items-center gap-x-1">
-          <UIcon name="material-symbols:article-person"/>
+        <span
+          v-if="task.meta.name"
+          class="flex items-center gap-x-1"
+        >
+          <UIcon name="material-symbols:article-person" />
           {{ task.meta.name }}
         </span>
-        <span v-if="extended && task.meta.author" class="flex items-center gap-x-1">
-          <UIcon name="material-symbols:article-person"/>
-          <a :href="task.meta.author_url">{{ task.meta.author }}</a>
+        <span
+          v-if="extended && task.meta.author"
+          class="flex items-center gap-x-1"
+        >
+          <UIcon name="material-symbols:article-person" />
+          <a
+            v-if="safeAuthorUrl"
+            :href="safeAuthorUrl"
+            rel="noopener noreferrer"
+          >{{ task.meta.author }}</a>
+          <template v-else>{{ task.meta.author }}</template>
         </span>
         <span class="flex items-center gap-x-1 wrap-anywhere">
-          <UIcon name="material-symbols:media-link"/>
+          <UIcon name="material-symbols:media-link" />
           {{ task.url }}
         </span>
         <UBadge
@@ -92,7 +106,7 @@ const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'y
           color="neutral"
           variant="outline"
         >
-          <UIcon name="material-symbols:timer-play"/>
+          <UIcon name="material-symbols:timer-play" />
           <template v-if="task.meta.duration > 60">
             {{ floor(task.meta.duration / 60) }}:{{ floor(task.meta.duration % 60) }}
           </template>
@@ -100,7 +114,6 @@ const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'y
             {{ task.meta.duration }} seconds
           </template>
         </UBadge>
-
       </template>
       <template #footer>
         <div class="space-x-1 flex items-center justify-center">
@@ -112,7 +125,7 @@ const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'y
               color="neutral"
               variant="outline"
             >
-              <UIcon name="pepicons-pop:soft-drink-circle"/>
+              <UIcon name="pepicons-pop:soft-drink-circle" />
               <span
                 v-if="props.extended"
                 class="text-muted"
@@ -129,7 +142,7 @@ const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'y
             color="neutral"
             variant="outline"
           >
-            <UIcon name="pepicons-pop:clock"/>
+            <UIcon name="pepicons-pop:clock" />
             {{ tsCreatedUTC }} UTC
           </UBadge>
           <UBadge
@@ -138,7 +151,7 @@ const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'y
             color="error"
             variant="outline"
           >
-            <UIcon name="material-symbols:skull"/>
+            <UIcon name="material-symbols:skull" />
             Logs Expired
           </UBadge>
           <UBadge
@@ -147,7 +160,7 @@ const tsCreatedUTC = computed(() => (format(parseJSON(props.task.ts_created), 'y
             color="warning"
             variant="outline"
           >
-            <UIcon name="material-symbols:auto-delete"/>
+            <UIcon name="material-symbols:auto-delete" />
             Data Removed
           </UBadge>
         </div>

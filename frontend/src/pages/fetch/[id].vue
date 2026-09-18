@@ -71,10 +71,10 @@ if (data.value?.id) {
 <template>
   <p v-if="isLoading">
     <UContainer>
-      <USkeleton class="h-40 w-full"/>
-      <USkeleton class="h-40 w-full"/>
-      <USeparator class="h-40 w-full"/>
-      <USkeleton class="h-100 w-100"/>
+      <USkeleton class="h-40 w-full" />
+      <USkeleton class="h-40 w-full" />
+      <USeparator class="h-40 w-full" />
+      <USkeleton class="h-100 w-100" />
     </UContainer>
   </p>
   <p v-else-if="error">
@@ -89,7 +89,10 @@ if (data.value?.id) {
   <div v-else-if="data">
     <UContainer class="flex flex-col items-center">
       <UContainer class="flex items-center flex-col md:flex-row justify-center gap-10">
-        <img :src="data.meta.thumbnail_url" class="block-40 rounded-lg">
+        <img
+          :src="data.meta.thumbnail_url"
+          class="block-40 rounded-lg"
+        >
         <FetchCard
           :task="data"
           extended
@@ -104,15 +107,22 @@ if (data.value?.id) {
         orientation="horizontal"
       />
     </UContainer>
-    <USeparator class="py-5"/>
+    <USeparator class="py-5" />
     <UContainer>
       <h2 class="text-4xl font-bold pb-2">
         Fetch Log
       </h2>
-      <FetchEventLog v-if="!data.purged" :id="data.id" :live="!['success', 'failed'].includes(data.status)"/>
-      <UAlert v-else color="info"
-              description="The Fetch Log for this Fetch has been purged after expiry."
-              icon="material-symbols:bomb"/>
+      <FetchEventLog
+        v-if="!data.purged"
+        :id="data.id"
+        :live="!['success', 'failed'].includes(data.status)"
+      />
+      <UAlert
+        v-else
+        color="info"
+        description="The Fetch Log for this Fetch has been purged after expiry."
+        icon="material-symbols:bomb"
+      />
     </UContainer>
   </div>
 </template>
