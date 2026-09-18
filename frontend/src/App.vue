@@ -51,7 +51,7 @@ icon.value = favicon
             class="focus-visible:outline-3 outline-primary/25 rounded-md p-1 -ms-1"
             to="/"
           >
-            <AppLogo class="w-auto h-6 shrink-0 text-2xl"/>
+            <AppLogo class="w-auto h-6 shrink-0 text-2xl" />
           </RouterLink>
         </template>
 
@@ -63,15 +63,15 @@ icon.value = favicon
               base: '-right-2'
             }"
           />
-          <UColorModeButton/>
+          <UColorModeButton />
         </template>
       </UHeader>
 
       <UMain class="pt-5">
-        <RouterView/>
+        <RouterView />
       </UMain>
 
-      <USeparator :icon="appIcon"/>
+      <USeparator :icon="appIcon" />
 
       <UFooter>
         <template #left>
@@ -84,8 +84,8 @@ icon.value = favicon
           />
           <p class="text-sm text-muted flex flex-nowrap items-center">
             A <a href="https://duck.me.uk">
-            <AuthorLogo class="flex-1 h-3 px-1"/>
-          </a> project
+              <AuthorLogo class="flex-1 h-3 px-1" />
+            </a> project
           </p>
         </template>
 
@@ -95,7 +95,7 @@ icon.value = favicon
             color="neutral"
             variant="soft"
           >
-            <UIcon name="material-symbols:package-2"/>
+            <UIcon name="material-symbols:package-2" />
             {{ appVersion }}
           </UBadge>
           <UButton
@@ -110,5 +110,5 @@ icon.value = favicon
       </UFooter>
     </UApp>
   </Suspense>
-  <VueQueryDevtools v-if="isDev"/>
+  <VueQueryDevtools v-if="isDev" />
 </template>

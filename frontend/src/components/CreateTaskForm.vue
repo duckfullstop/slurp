@@ -154,7 +154,7 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
         type="submit"
         @click="submitAction = 'redirect'"
       >
-        <UIcon name="pepicons-pop:soft-drink"/>
+        <UIcon name="pepicons-pop:soft-drink" />
         Slurp Media
       </UButton>
       <UDropdownMenu

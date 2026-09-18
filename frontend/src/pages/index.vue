@@ -17,15 +17,15 @@ watch([liveData, liveEvent], ([raw, type]) => {
 
 <template>
   <UContainer>
-    <CreateTaskForm/>
+    <CreateTaskForm />
   </UContainer>
-  <USeparator class="py-5"/>
+  <USeparator class="py-5" />
   <UContainer>
     <p v-if="isLoading">
       <UPageGrid class="flex-col">
-        <USkeleton class="h-40 w-100"/>
-        <USkeleton class="h-40 w-100"/>
-        <USkeleton class="h-40 w-100"/>
+        <USkeleton class="h-40 w-100" />
+        <USkeleton class="h-40 w-100" />
+        <USkeleton class="h-40 w-100" />
       </UPageGrid>
     </p>
     <p v-else-if="error">
@@ -37,16 +37,24 @@ watch([liveData, liveEvent], ([raw, type]) => {
         variant="solid"
       />
     </p>
-    <div v-else-if="data" class="relative grid grid-cols-1 sm:grid-cols-2 gap-8 flex-col-reverse">
+    <div
+      v-else-if="data"
+      class="relative grid grid-cols-1 sm:grid-cols-2 gap-8 flex-col-reverse"
+    >
       <div
         v-for="task in data.slice().reverse()"
         :key="task.id"
       >
-        <RouterLink :to="{name: '/fetch/[id]', params: {id: task.id}}" class="block">
-          <FetchCard :task="task" fullWidth/>
+        <RouterLink
+          :to="{name: '/fetch/[id]', params: {id: task.id}}"
+          class="block"
+        >
+          <FetchCard
+            :task="task"
+            full-width
+          />
         </RouterLink>
       </div>
     </div>
-
   </UContainer>
 </template>

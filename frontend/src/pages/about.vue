@@ -22,20 +22,20 @@ const configFetcherList = computed<AccordionItem[]>(() => {
 <template>
   <UPageHero class="mt-0">
     <template #title>
-      <AppLogo class="justify-center text-7xl"/>
+      <AppLogo class="justify-center text-7xl" />
     </template>
     <template #description>
       A web media ingestion utility for the broadcast domain.
     </template>
   </UPageHero>
-  <USeparator class="pb-10"/>
+  <USeparator class="pb-10" />
   <UContainer>
     <UHeader
       class="pb-5"
       title="Available Fetchers"
     />
     <UCard class="w-full sm:w-200 justify-self-center">
-      <p v-if="isLoadingConfig"/>
+      <p v-if="isLoadingConfig" />
       <p v-else-if="configError">
         <UAlert
           :description="configError.message"

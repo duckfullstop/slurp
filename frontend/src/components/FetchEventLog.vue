@@ -54,7 +54,7 @@ function jumpToLive() {
 </script>
 <template>
   <p v-if="isLoading">
-    <USkeleton class="h-96 w-full"/>
+    <USkeleton class="h-96 w-full" />
   </p>
   <p v-else-if="error">
     <UAlert
@@ -75,8 +75,8 @@ function jumpToLive() {
       :items="data"
       class="w-full h-96 bg-black dark:bg-black"
     >
-      <FetchEventLogEntry :event="item"/>
-      <USeparator/>
+      <FetchEventLogEntry :event="item" />
+      <USeparator />
     </UScrollArea>
     <UBadge
       v-if="stickToBottom && live"
@@ -84,7 +84,7 @@ function jumpToLive() {
       color="success"
       variant="subtle"
     >
-      <span class="size-2 rounded-full bg-success-500 animate-pulse"/>
+      <span class="size-2 rounded-full bg-success-500 animate-pulse" />
       Live
     </UBadge>
     <UButton
