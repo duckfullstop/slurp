@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import {useConfigQuery} from '../composables/useTasks'
 import {computed} from "vue";
 import {AccordionItem} from "@nuxt/ui";
+import {useConfigQuery} from "../composables/useConfig.ts";
 
 const {data: config, isLoading: isLoadingConfig, error: configError} = useConfigQuery()
 

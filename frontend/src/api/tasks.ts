@@ -35,17 +35,6 @@ export interface FetchEvent {
   status: number
 }
 
-export interface AppConfigFetcher {
-  services: string[]
-}
-
-export interface AppConfig {
-  outputs: string[]
-  fetchers: {
-    [key: string]: AppConfigFetcher
-  }
-}
-
 export interface CreateTaskResponse {
   fetch_id: string
 }
@@ -72,14 +61,6 @@ export async function fetchTaskEvents(id: string): Promise<FetchEvent[]> {
     throw new Error(`Failed to fetch task ${id} events: ${res.status} ${res.statusText}`)
   }
   return res.json() as Promise<FetchEvent[]>
-}
-
-export async function fetchConfig(): Promise<AppConfig> {
-  const res = await fetch('/api/v1/config/')
-  if (!res.ok) {
-    throw new Error(`Failed to fetch app configuration: ${res.status} ${res.statusText}`)
-  }
-  return res.json() as Promise<AppConfig>
 }
 
 export async function createTask(payload: CreateTaskInput): Promise<CreateTaskResponse> {
