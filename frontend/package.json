@@ -17,6 +17,7 @@
     "@unhead/vue": "^3.4.1",
     "@vueuse/core": "^14.4.0",
     "date-fns": "^4.4.0",
+    "lib0": "^0.2.117",
     "tailwindcss": "^4.3.3",
     "vue": "^3.5.43",
     "vue-router": "^5.3.1",
