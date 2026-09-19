@@ -17,9 +17,6 @@ on:
 jobs:
   cri:
     uses: docker/github-builder/.github/workflows/build.yml@v1
-    permissions:
-      contents: read
-      id-token: write
     with:
       build-args: |
         NODE_ENV=${{ startsWith(github.ref, 'refs/tags/v') && 'production' || 'development' }}
