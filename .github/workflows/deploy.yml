@@ -1,0 +1,77 @@
+name: Deploy
+
+on:
+  release:
+    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to deploy (e.g. v2026.9.0). Defaults to the tag of the release that triggered this run."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: deploy-prod-cbs
+  cancel-in-progress: false
+
+jobs:
+  deploy-prod:
+    if: github.event_name == 'workflow_dispatch' || github.event.release.prerelease == false
+    runs-on:
+      labels: cbs-lon-deploy
+    environment:
+      name: prod-cbs
+      deployment: true
+    env:
+      COMPOSE_FILE: /opt/slurp/docker-compose.yml
+      IMAGE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
+      HEALTH_URL: http://localhost:8000/api/v1/config/
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Capture currently deployed tag
+        id: previous
+        run: |
+          PREV=$(grep -oP '(?<=^SLURP_IMAGE_TAG=).*' /opt/slurp/.env 2>/dev/null || true)
+          echo "tag=$PREV" >> "$GITHUB_OUTPUT"
+
+      - name: Pin release version
+        run: echo "SLURP_IMAGE_TAG=${IMAGE_TAG}" > /opt/slurp/.env
+
+      - name: Pull updated images
+        run: docker compose -f "$COMPOSE_FILE" --env-file /opt/slurp/.env pull
+
+      - name: Deploy
+        run: docker compose -f "$COMPOSE_FILE" --env-file /opt/slurp/.env up -d --remove-orphans
+
+      - name: Wait for web service to come up healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS -o /dev/null "$HEALTH_URL"; then
+              echo "Health check passed"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Health check failed after 60s" >&2
+          exit 1
+
+      - name: Roll back to previous tag on failed health check
+        if: failure() && steps.previous.outputs.tag != ''
+        run: |
+          echo "Rolling back to ${{ steps.previous.outputs.tag }}"
+          echo "SLURP_IMAGE_TAG=${{ steps.previous.outputs.tag }}" > /opt/slurp/.env
+          docker compose -f "$COMPOSE_FILE" --env-file /opt/slurp/.env up -d --remove-orphans
+          exit 1
+
+      - name: Clean up dangling images
+        run: docker image prune -f
