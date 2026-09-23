@@ -45,7 +45,7 @@ jobs:
           echo "tag=$PREV" >> "$GITHUB_OUTPUT"
 
       - name: Pin release version
-        run: echo "SLURP_IMAGE_TAG=${IMAGE_TAG}" > /opt/slurp/.env
+        run: echo "SLURP_IMAGE_TAG=${IMAGE_TAG#v}" > /opt/slurp/.env
 
       - name: Pull updated images
         run: docker compose -f "$COMPOSE_FILE" --env-file /opt/slurp/.env pull
