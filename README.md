@@ -1,12 +1,23 @@
 <h1 align="center">🥤 Slurp</h1>
 <p align="center"><b>A web media ingest utility, built with broadcast environments in mind.</b></p>
 
-<h3 align="center">_Made possible by..._</h>
 <p align="center">
-<img src="docs/static/img/CBS_News_logo_(2020).svg" width="256"></img>
+  <a href="https://github.com/duckfullstop/slurp/releases"><img src="https://img.shields.io/github/v/release/duckfullstop/slurp?label=release&color=4c8dff" alt="Latest release"></a>
+  <a href="https://github.com/duckfullstop/slurp/actions/workflows/ci.yml"><img src="https://github.com/duckfullstop/slurp/actions/workflows/build.yml/badge.svg?branch=main&event=push" alt="CI status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-EUPL--1.2--or--later-blue" alt="License EUPL v1.2 or later"></a>
 </p>
 
 ___
+<p align="center">
+<img src="docs/static/img/CBS_News_logo_(2020).svg" width="128"></img>
+</p>
+
+___
+
+<p align="center">
+<img src="docs/static/img/ui_1.png" width="320"/>
+<img src="docs/static/img/ui_2.png" width="320"/>
+</p>
 
 ## What is Slurp?
 
