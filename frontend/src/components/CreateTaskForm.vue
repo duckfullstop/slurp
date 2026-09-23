@@ -102,8 +102,9 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
     <UFormField
       label="🐌 Slug"
       name="slug"
-      :ui="{label: 'flex items-center gap-x-1'}"
+      :ui="{label: 'flex items-center gap-x-1 font-sans'}"
       size="xl"
+      class="font-mono"
       required
     >
       <template #label>
@@ -119,44 +120,49 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
       />
     </UFormField>
 
-    <UFormField
-      label="✍️ Format"
-      name="format"
-      :ui="{label: 'flex items-center gap-x-1'}"
-      size="md"
-      required
-    >
-      <template #label>
-        <UIcon name="material-symbols:convert-to-text" /> Format
-      </template>
-      <USelect
-        v-model="state.format"
-        :items="FORMAT_OPTIONS"
-        class="w-full"
-        placeholder="Select an output format"
-      />
-    </UFormField>
+    <div class="flex flex-wrap  gap-x-5 md:gap-x-10">
+      <UFormField
+        :ui="{label: 'flex items-center gap-x-1'}"
+        class="flex-grow-1"
+        label="✍️ Format"
+        name="format"
+        required
+        size="xl"
+      >
+        <template #label>
+          <UIcon name="material-symbols:convert-to-text" /> Format
+        </template>
+        <USelect
+          v-model="state.format"
+          :items="FORMAT_OPTIONS"
+          class="w-full"
+          placeholder="Select an output format"
+        />
+      </UFormField>
 
-    <UFormField
-      :error="configError ? configError.message : undefined"
-      label="📁 Target"
-      name="target"
-      :ui="{label: 'flex items-center gap-x-1'}"
-      size="md"
-      required
-    >
-      <template #label>
-        <UIcon name="material-symbols:folder-open" /> Target
-      </template>
-      <USelect
-        v-model="state.target"
-        :disabled="isLoadingConfig || !!configError"
-        :items="targetOptions"
-        :loading="isLoadingConfig"
-        class="w-full"
-        placeholder="Select a target output directory"
-      />
-    </UFormField>
+      <UFormField
+        :error="configError ? configError.message : undefined"
+        :ui="{label: 'flex items-center gap-x-1'}"
+        class="flex-grow-1"
+        label="📁 Target"
+        name="target"
+        required
+        size="xl"
+      >
+        <template #label>
+          <UIcon name="material-symbols:file-open" /> Target
+        </template>
+        <USelect
+          v-model="state.target"
+          :disabled="isLoadingConfig || !!configError"
+          :items="targetOptions"
+          :loading="isLoadingConfig"
+          class="w-full"
+          placeholder="Select a target output directory"
+        />
+      </UFormField>
+    </div>
+
 
     <UAlert
       v-if="mutation.isSuccess.value"

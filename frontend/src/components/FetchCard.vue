@@ -55,7 +55,7 @@ const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
       <template #title>
         <div class="space-x-1 flex items-center">
           <UBadge
-            class="text-1xl"
+            class="text-1xl font-mono"
             color="neutral"
           >
             <UIcon
@@ -67,16 +67,16 @@ const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
             >
               {{ taskSlugLeading }}
             </span>
-          </UBadge>
-          <UBadge
-            v-if="taskSlugTrailing"
-            class="text-1xl"
-            color="neutral"
-          >
-            <UIcon name="material-symbols:description" />
-            <span>
-              {{ taskSlugTrailing }}
-            </span>
+            <UBadge
+              v-if="taskSlugTrailing"
+              class="text-sm"
+              color="neutral"
+              variant="soft"
+            >
+              <span>
+                {{ taskSlugTrailing }}
+              </span>
+            </UBadge>
           </UBadge>
         </div>
       </template>
@@ -125,11 +125,26 @@ const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
         <div class="space-x-1 flex items-center justify-center">
           <UTooltip
             :delay-duration="0"
+            text="Fetch Requested time"
+          >
+            <UBadge
+              v-if="task.ts_created"
+              class="font-mono"
+              color="neutral"
+              variant="outline"
+            >
+              <UIcon name="pepicons-pop:clock" />
+              {{ tsCreatedUTC }} UTC
+            </UBadge>
+          </UTooltip>
+          <UTooltip
+            :delay-duration="0"
             text="Slurp Job ID"
           >
             <UBadge
               color="neutral"
               variant="outline"
+              class="font-mono"
             >
               <UIcon name="pepicons-pop:soft-drink-circle" />
               <span
@@ -143,14 +158,7 @@ const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
               </span>
             </UBadge>
           </UTooltip>
-          <UBadge
-            v-if="task.ts_created"
-            color="neutral"
-            variant="outline"
-          >
-            <UIcon name="pepicons-pop:clock" />
-            {{ tsCreatedUTC }} UTC
-          </UBadge>
+
           <UBadge
             v-if="task.purged"
             class="align-self-center"
