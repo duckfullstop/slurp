@@ -1290,7 +1290,7 @@ wheels = [
 
 [[package]]
 name = "slurp"
-version = "2026.9.0"
+version = "2026.9.1"
 source = { editable = "." }
 dependencies = [
     { name = "celery", extra = ["redis"] },

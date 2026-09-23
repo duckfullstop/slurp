@@ -1,7 +1,8 @@
 from flask import current_app
 from flask_restx import Namespace, Resource, fields
 
-api = Namespace("config", description="Application configuration")
+# Ordered must be set here otherwise lists don't have the desired output order, which is important for display purposes
+api = Namespace("config", description="Application configuration", ordered=True)
 
 fetcherInfo = api.model(
     "Fetcher Info",
