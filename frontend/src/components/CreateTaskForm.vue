@@ -80,33 +80,55 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
   >
     <UFormField
       label="🌐 URL"
+      :ui="{label: 'flex items-center gap-x-1'}"
       name="url"
+      icon="icon"
+      size="xl"
       required
     >
+      <template #label>
+        <UIcon
+          class="text-orange-600"
+          name="material-symbols:media-link"
+        /> URL
+      </template>
       <UInput
         v-model="state.url"
         class="w-full"
-        placeholder="URL"
+        placeholder="https://www.youtube.com/watch?v=..."
       />
     </UFormField>
 
     <UFormField
       label="🐌 Slug"
       name="slug"
+      :ui="{label: 'flex items-center gap-x-1'}"
+      size="xl"
       required
     >
+      <template #label>
+        <UIcon
+          class="text-green-600"
+          name="material-symbols:snail"
+        /> Slug
+      </template>
       <UInput
         v-model="state.slug"
         class="w-full"
-        placeholder="Slug"
+        placeholder="TST000 Example Slug"
       />
     </UFormField>
 
     <UFormField
       label="✍️ Format"
       name="format"
+      :ui="{label: 'flex items-center gap-x-1'}"
+      size="md"
       required
     >
+      <template #label>
+        <UIcon name="material-symbols:convert-to-text" /> Format
+      </template>
       <USelect
         v-model="state.format"
         :items="FORMAT_OPTIONS"
@@ -119,8 +141,13 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
       :error="configError ? configError.message : undefined"
       label="📁 Target"
       name="target"
+      :ui="{label: 'flex items-center gap-x-1'}"
+      size="md"
       required
     >
+      <template #label>
+        <UIcon name="material-symbols:folder-open" /> Target
+      </template>
       <USelect
         v-model="state.target"
         :disabled="isLoadingConfig || !!configError"

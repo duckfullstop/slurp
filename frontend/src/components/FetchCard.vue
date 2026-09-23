@@ -58,7 +58,10 @@ const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
             class="text-1xl"
             color="neutral"
           >
-            <UIcon name="material-symbols:snail" />
+            <UIcon
+              class="text-green-600"
+              name="material-symbols:snail"
+            />
             <span
               class="font-bold"
             >
@@ -98,7 +101,10 @@ const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
           <template v-else>{{ task.meta.author }}</template>
         </span>
         <span class="flex items-center gap-x-1 wrap-anywhere">
-          <UIcon name="material-symbols:media-link" />
+          <UIcon
+            class="text-orange-600"
+            name="material-symbols:media-link"
+          />
           {{ task.url }}
         </span>
         <UBadge
