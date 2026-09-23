@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "v2026.9.1",
+  "version": "v2026.9.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@date-fns/utc": "^2.1.1",
+    "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
     "@nuxt/ui": "^4.11.1",
     "@tanstack/vue-query": "^5.103.1",
     "@unhead/vue": "^3.4.1",
