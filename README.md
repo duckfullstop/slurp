@@ -1,4 +1,5 @@
-<h1 align="center">🥤 Slurp</h1>
+# 🥤 Slurp
+
 <p align="center"><b>A web media ingest utility, built with broadcast environments in mind.</b></p>
 
 <p align="center">
