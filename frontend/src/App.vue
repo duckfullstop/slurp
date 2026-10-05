@@ -10,7 +10,7 @@ import {useNotifier} from "./composables/useNotifier.ts";
 import favicon from "./assets/img/favicon.ico";
 
 const {status: liveEventsStatus} = useLiveEvents()
-useNotifier()
+const {soundEnabled} = useNotifier()
 
 const liveEventsStatusText = computed(() => ({
   OPEN: 'Live!',
@@ -90,6 +90,19 @@ icon.value = favicon
         </template>
 
         <template #right>
+          <UTooltip
+            :delay-duration="0"
+            placement="top"
+            text="Turn notification sounds on/off. Warning: These are extremely silly!"
+          >
+            <UButton
+              :aria-label="soundEnabled ? 'Mute sounds' : 'Unmute sounds'"
+              :icon="soundEnabled ? 'material-symbols:volume-up' : 'material-symbols:volume-off'"
+              color="neutral"
+              variant="ghost"
+              @click="soundEnabled = !soundEnabled"
+            />
+          </UTooltip>
           <UBadge
             class="font-mono"
             color="neutral"
