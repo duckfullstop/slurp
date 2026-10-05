@@ -4,6 +4,11 @@ import {useLiveEvents} from '../composables/useLiveEvents'
 import {useQueryClient} from '@tanstack/vue-query'
 import {watch} from "vue";
 
+const createTabs = [
+  {label: 'Single', icon: 'pepicons-pop:soft-drink', slot: 'single'},
+  {label: 'Multi-Slurp!', icon: 'pepicons-pop:soft-drink-circle', slot: 'batch'},
+]
+
 const {data, isLoading, error} = useTasksQuery()
 
 const queryClient = useQueryClient()
@@ -17,7 +22,17 @@ watch([liveData, liveEvent], ([raw, type]) => {
 
 <template>
   <UContainer>
-    <CreateTaskForm />
+    <UTabs
+      :items="createTabs"
+      class="w-full"
+    >
+      <template #single>
+        <CreateTaskForm />
+      </template>
+      <template #batch>
+        <CreateTaskBatchForm />
+      </template>
+    </UTabs>
   </UContainer>
   <USeparator class="py-5" />
   <UContainer>
