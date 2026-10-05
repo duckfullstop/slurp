@@ -2,13 +2,24 @@ import {watch} from 'vue'
 import {useToast} from '@nuxt/ui/composables'
 import {useLiveEvents} from './useLiveEvents'
 import {FetchUpdatedEvent} from "../api/events.ts";
-import {usePermission, useWebNotification} from "@vueuse/core";
+import {usePermission, useStorage, useWebNotification} from "@vueuse/core";
+import {useSound} from "@vueuse/sound";
+
+const SUCCESS_SOUNDS = ['/sound/success1.mp3', '/sound/success2.mp3']
+const FAILURE_SOUNDS = ['/sound/failure1.mp3']
 
 export function useNotifier() {
   const toast = useToast()
   const {data, event} = useLiveEvents()
 
   const notifyPermission = usePermission('notifications')
+
+  const soundEnabled = useStorage('slurp:sound-enabled', false)
+
+  const successSounds = SUCCESS_SOUNDS.map(url => useSound(url))
+  const failureSounds = FAILURE_SOUNDS.map(url => useSound(url))
+  const playRandom = (sounds: ReturnType<typeof useSound>[]) =>
+    sounds[Math.floor(Math.random() * sounds.length)]?.play()
 
   const {
     isSupported,
@@ -17,6 +28,7 @@ export function useNotifier() {
   } = useWebNotification({
     lang: 'en',
     renotify: true,
+    silent: true, // we play our own sound
     tag: 'slurp',
   })
 
@@ -51,6 +63,8 @@ export function useNotifier() {
       color: color
     })
 
+    if (soundEnabled.value) playRandom(color === 'success' ? successSounds : failureSounds)
+
     if (notifyPermission.value && isSupported.value && permissionGranted.value) {
       show({
         title: title,
@@ -59,4 +73,6 @@ export function useNotifier() {
     }
 
   })
+
+  return {soundEnabled}
 }
