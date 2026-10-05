@@ -75,3 +75,11 @@ export async function createTask(payload: CreateTaskInput): Promise<CreateTaskRe
   return res.json() as Promise<CreateTaskResponse>
 }
 
+
+export async function abortTask(id: string): Promise<Task> {
+  const res = await fetch(`/api/v1/task/${id}/cancel`, {method: 'POST'})
+  if (!res.ok) {
+    throw new Error(`Failed to abort task ${id}: ${res.status} ${res.statusText}`)
+  }
+  return res.json() as Promise<Task>
+}

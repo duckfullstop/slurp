@@ -193,6 +193,27 @@ class Task(Resource):
         return fetch
 
 
+@api.route("/<string:task_id>/cancel")
+class TaskCancel(Resource):
+    @api.doc("cancel_task")
+    @api.marshal_with(fetchTask)
+    def post(self, task_id):
+        """
+        Cancel an existing task.
+        Please note: this is best effort, and may leave the fetch in an unexpected state.
+        """
+        try:
+            fetch = Fetch.get(task_id)
+        except model.NotFoundError:
+            return abort(404)
+
+        try:
+            fetch.abort()
+        except AssertionError as e:
+            return abort(400, str(e))
+        return fetch
+
+
 @api.route("/<string:task_id>/events")
 class TaskEvents(Resource):
     @api.doc("get_events")

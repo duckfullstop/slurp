@@ -33,6 +33,11 @@ export function useNotifier() {
       body = ''
       icon = 'pepicons-pop:checkmark-circle-filled'
       color = 'success'
+    } else if (update.state === 'aborted') {
+      title = 'Fetch ' + update.fetch_id.slice(-4) + ' aborted'
+      body = update.message
+      icon = 'pepicons-pop:exclamation-circle-filled'
+      color = 'error'
     } else {
       title = 'Fetch ' + update.fetch_id.slice(-4) + ' failed'
       body = update.message

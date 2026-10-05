@@ -1,11 +1,13 @@
 import math
 import queue
 import threading
-from collections.abc import Generator
+import time
+from collections.abc import Callable, Generator
 from datetime import UTC, datetime
 from glob import glob
 
 from yt_dlp import YoutubeDL
+from yt_dlp.utils import DownloadCancelled
 
 from slurp.fetchers.types import (
     Fetcher,
@@ -16,6 +18,29 @@ from slurp.fetchers.types import (
     Format,
     MediaMetadata,
 )
+
+
+def _make_cancel_hook(
+    should_abort: Callable[[], bool] | None,
+) -> Callable[[dict], None]:
+    """
+    Build a yt-dlp progress / postprocessor hook that raises DownloadCancelled once should_abort reports True.
+    Hooks fire many times a second, so the (potentially remote) check is throttled.
+    """
+    last_check = 0.0
+
+    def _cancel_hook(_status: dict) -> None:
+        nonlocal last_check
+        if should_abort is None:
+            return
+        now = time.monotonic()
+        if now - last_check < 1:
+            return
+        last_check = now
+        if should_abort():
+            raise DownloadCancelled("Abort requested")
+
+    return _cancel_hook
 
 
 class YTDLPFetcher(Fetcher):
@@ -147,11 +172,12 @@ class YTDLPFetcher(Fetcher):
         fmt: Format,
         directory: str,
         filename: str,
+        should_abort: Callable[[], bool] | None = None,
     ):
         """
         Commence a download from YouTube.
-        Consider threading this to allow for asynchronous downloads.
         """
+        cancel_hook = _make_cancel_hook(should_abort)
         opts = (
             {
                 "logger": self._Queuelogger(q),
@@ -161,6 +187,8 @@ class YTDLPFetcher(Fetcher):
                     "home": directory,
                     "temp": f"{directory}/temp",  # currently hard-coded - should we make this configurable?
                 },
+                "progress_hooks": [cancel_hook],
+                "postprocessor_hooks": [cancel_hook],
             }
             | self._format_config(fmt)
         )
@@ -169,11 +197,17 @@ class YTDLPFetcher(Fetcher):
             opts.update({"js_runtimes": self.js_runtimes})
 
         try:
+            if should_abort is not None and should_abort():
+                raise DownloadCancelled("Abort requested")
+
             # We support early metadata - send that if it's available.
             metadata = self._get_metadata(url, fmt)
             if metadata.name != "":
                 event = FetcherMediaMetadataAvailable(metadata=metadata)
                 q.put(event)
+
+            if should_abort is not None and should_abort():
+                raise DownloadCancelled("Abort requested")
 
             with YoutubeDL(opts) as ydl:
                 code = ydl.download([url])
@@ -190,6 +224,15 @@ class YTDLPFetcher(Fetcher):
                         message="Fetcher complete",
                     )
                 )
+        except DownloadCancelled:
+            q.put(
+                FetcherProgressReport(
+                    typ="finish",
+                    level="warning",
+                    status=1,
+                    message="Fetcher aborted",
+                )
+            )
         except Exception as e:
             q.put(
                 FetcherProgressReport(
@@ -209,31 +252,47 @@ class YTDLPFetcher(Fetcher):
         fmt: Format,
         directory: str,
         filename: str,
+        should_abort: Callable[[], bool] | None = None,
     ) -> Generator[FetcherUpdateEvent]:
         """get_media downloads the media at the given params in the foreground, returning log information by means of a Generator."""
         q: queue.Queue[FetcherUpdateEvent] = queue.Queue()
 
         # We need to run the download on a thread so we can continue to execute our client response
         thread = threading.Thread(
-            target=self._get_media, args=(q, url, fmt, directory, filename), daemon=True
+            target=self._get_media,
+            args=(q, url, fmt, directory, filename, should_abort),
+            daemon=True,
         )
         thread.start()
 
-        while True:
-            try:
-                # Reasonably sane timeout, just to stop us endlessly spinning.
-                event: FetcherUpdateEvent = q.get(timeout=300)
-            except queue.ShutDown:
-                # End of data.
-                break
-            match event:
-                case FetcherProgressReport() as i:
-                    if i.typ == "finish":
-                        yield i
-                        # Break the generator.
+        try:
+            last_event = time.monotonic()
+            while True:
+                try:
+                    # Poll briefly so an abort request is noticed even while yt-dlp is quiet.
+                    event: FetcherUpdateEvent = q.get(timeout=1)
+                except queue.ShutDown:
+                    # End of data.
+                    break
+                except queue.Empty:
+                    if should_abort is not None and should_abort():
                         break
-                    yield i
-                case FetcherMediaMetadataAvailable() as i:
-                    yield i
-                case FetcherMediaAvailable() as i:
-                    yield i
+                    if time.monotonic() - last_event > 300:
+                        raise TimeoutError("yt-dlp produced no output for 300s")
+                    continue
+                last_event = time.monotonic()
+                match event:
+                    case FetcherProgressReport() as i:
+                        if i.typ == "finish":
+                            yield i
+                            # Break the generator.
+                            break
+                        yield i
+                    case FetcherMediaMetadataAvailable() as i:
+                        yield i
+                    case FetcherMediaAvailable() as i:
+                        yield i
+        finally:
+            # Don't let the caller tear down the working directory while yt-dlp may still be writing to it.
+            # The cancel hook stops the download within about a second of an abort request.
+            thread.join(timeout=30)
