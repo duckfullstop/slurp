@@ -1,7 +1,7 @@
 import os
 import queue
 import threading
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from json import JSONDecodeError
 
 import httpx
@@ -284,6 +284,7 @@ class CobaltFetcher(Fetcher):
         fmt: Format,
         directory: str,
         filename: str,
+        should_abort: Callable[[], bool] | None = None,
     ) -> Generator[FetcherUpdateEvent]:
         """get_media downloads the media at the given params in the foreground, returning log information by means of a Generator."""
         q: queue.Queue[FetcherUpdateEvent] = queue.Queue()

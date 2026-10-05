@@ -23,3 +23,8 @@ class FetchersExhaustedError(Exception):
 class FetchLockedError(Exception):
     def __str__(self):
         return "Fetch locked by another worker"
+
+
+class FetchAbortedError(Exception):
+    def __str__(self):
+        return "Fetch aborted on request"

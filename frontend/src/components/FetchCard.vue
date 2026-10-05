@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import {format, parseJSON} from "date-fns";
-import {computed} from "vue";
+import {computed, ref} from "vue";
 import {Task} from "../api/tasks.ts";
 import {utc} from "@date-fns/utc";
 import {floor} from "lib0/math";
 import {getSafeUrl} from "../utils/url.ts";
+import {useAbortTaskMutation} from "../composables/useTasks.ts";
 
 const props = defineProps<{
   task: Task,
@@ -16,6 +17,9 @@ let highlightColor = computed(() => {
   switch (props.task.status) {
     case 'failed':
       return 'error'
+    case 'aborting':
+    case 'aborted':
+      return 'warning'
     case 'success':
       return 'success'
     case 'running':
@@ -35,6 +39,34 @@ let taskSlugTrailing = computed(() => {
 })
 
 const tsCreatedUTC = computed(() => format(parseJSON(props.task.ts_created), 'yyyy-MM-dd HH:mm', {in: utc}))
+
+const toast = useToast()
+const {mutate: abort, isPending: isAborting, error: abortError} = useAbortTaskMutation()
+
+const confirmOpen = ref(false)
+
+// the detail page (extended) aborts immediately; the list view asks first
+function onAbortClick() {
+  if (props.extended) {
+    onAbort()
+  } else {
+    confirmOpen.value = true
+  }
+}
+
+function onAbort() {
+  confirmOpen.value = false
+  abort(props.task.id, {
+    onError: (err) => toast.add({
+      title: 'Failed to abort fetch ' + props.task.id.slice(-4),
+      description: err.message,
+      icon: 'pepicons-pop:exclamation-circle-filled',
+      color: 'error',
+    }),
+  })
+}
+
+const canAbort = computed(() => ['created', 'running'].includes(props.task.status))
 
 const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
 
@@ -113,7 +145,10 @@ const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
           variant="outline"
         >
           <UIcon name="material-symbols:timer-play" />
-          <template v-if="task.meta.duration > 60">
+          <template v-if="task.meta.duration > 3600">
+            {{ floor(task.meta.duration / 3600) }}h {{ floor((task.meta.duration % 3600) / 60) }}m
+          </template>
+          <template v-else-if="task.meta.duration > 60">
             {{ floor(task.meta.duration / 60) }}:{{ floor(task.meta.duration % 60) }}
           </template>
           <template v-else>
@@ -177,6 +212,50 @@ const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
             <UIcon name="material-symbols:auto-delete" />
             Data Removed
           </UBadge>
+        </div>
+        <div class="mt-1 space-x-1 flex items-center">
+          <UIcon name="pepicons-pop:arrow-right" />
+          <!-- v-if="canAbort" -->
+          <UTooltip
+            :delay-duration="0"
+            :text="canAbort ? 'Abort this Fetch' : 'Cannot abort this task'"
+          >
+            <UButton
+              :color="abortError ? 'error' : 'warning'"
+              :disabled="!canAbort"
+              :loading="isAborting"
+              icon="material-symbols:cancel"
+              size="xs"
+              variant="soft"
+              @click.prevent.stop="onAbortClick"
+            >
+              Abort
+            </UButton>
+          </UTooltip>
+          <UModal
+            v-model:open="confirmOpen"
+            :description="`This will attempt to abort fetch ${task.id.slice(-4)} (${task.url}), and may leave the fetch in an invalid state.`"
+            title="Abort this Fetch?"
+          >
+            <template #footer>
+              <div class="flex w-full justify-end gap-2">
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  @click="confirmOpen = false"
+                >
+                  Cancel
+                </UButton>
+                <UButton
+                  color="warning"
+                  icon="material-symbols:cancel"
+                  @click="onAbort"
+                >
+                  Request Abort
+                </UButton>
+              </div>
+            </template>
+          </UModal>
         </div>
       </template>
     </UPageCard>

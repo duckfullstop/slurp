@@ -1,7 +1,7 @@
 import os
 import tomllib
 
-from celery import Celery, Task
+from celery import Celery
 from flask import Flask, request, stream_with_context
 from flask_sse import sse
 from flask_vite import Vite
@@ -9,17 +9,10 @@ from flask_vite import Vite
 from slurp.api import api_blueprint
 from slurp.db import bind_redis
 from slurp.fetchers import fetcher_manager
+from slurp.flask_task import FlaskTask as _FlaskTask
 from slurp.helpers import format_duration
 from slurp.routes import main_blueprint
 from slurp.tasks import _init_periodic_tasks
-
-
-class _FlaskTask(Task):
-    flask_app: Flask
-
-    def __call__(self, *args: object, **kwargs: object) -> object:
-        with self.flask_app.app_context():
-            return self.run(*args, **kwargs)
 
 
 def __celery_init_app(app: Flask) -> Celery:

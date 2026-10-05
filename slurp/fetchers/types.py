@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -92,12 +92,16 @@ class Fetcher(ABC):
         fmt: Format,
         directory: str,
         filename: str,
+        should_abort: Callable[[], bool] | None = None,
     ) -> Generator[FetcherUpdateEvent]:
         """
         fetch fetches the media at the given URL, in the given format, and places it at the provided directory / filename.
         Updates are provided over the returned generator.
         It is expected that the directory provided is a temporary directory that will be scrubbed after completion,
         with the completed media moved to the final location.
+
+        should_abort, if provided, is polled by the caller's request: when it returns True the fetcher should stop
+        work as soon as practical and end the generator. Fetchers that cannot be interrupted may ignore it.
 
         If early metadata for the given media is available, return a MediaMetadata object.
         Otherwise, return FetcherProgress objects.

@@ -31,6 +31,27 @@ watch([liveData, liveEvent], ([raw, type]) => {
   }
 })
 
+const finalStatusStepper: Record<string, StepperItem> = {
+  failed: {
+    title: 'Failed',
+    description: 'The fetch failed. Check the logs.',
+    icon: 'pepicons-pop:exclamation',
+    value: 'failed'
+  },
+  aborted: {
+    title: 'Aborted',
+    description: 'The fetch was stopped before it finished.',
+    icon: 'pepicons-pop:exclamation',
+    value: 'aborted'
+  },
+  success: {
+    title: 'Complete',
+    description: 'The fetch is complete.',
+    icon: 'pepicons-pop:checkmark',
+    value: 'success'
+  },
+}
+
 const items = computed<StepperItem[]>(() => [
   {
     title: 'Created',
@@ -44,22 +65,27 @@ const items = computed<StepperItem[]>(() => [
     icon: 'pepicons-pop:cloud-down',
     value: 'running'
   },
-  data.value?.status === 'failed'
-    ? {
-      title: 'Failed',
-      description: 'The fetch failed. Check the logs.',
+  ...(['aborting', 'aborted'].includes(data.value?.status ?? '')
+    ? [{
+      title: 'Aborting',
+      description: 'The fetch is being stopped. Note: This may not be possible, depending on the fetcher state.',
       icon: 'pepicons-pop:exclamation',
-      value: 'failed'
-    }
-    : {
-      title: 'Complete',
-      description: 'The fetch is complete.',
-      icon: 'pepicons-pop:checkmark',
-      value: 'success'
-    },
+      value: 'aborting'
+    }]
+    : []),
+  finalStatusStepper[data.value?.status ?? ''] ?? finalStatusStepper.success,
 ])
 
-const timelineColor = computed(() => data.value?.status === 'failed' ? 'error' : 'success')
+const timelineColor = computed(() => {
+  switch (data.value?.status) {
+    case 'failed':
+      return 'error'
+    case 'aborted':
+      return 'warning'
+    default:
+      return 'success'
+  }
+})
 
 const title = useTitle()
 if (data.value?.id) {
@@ -115,7 +141,7 @@ if (data.value?.id) {
       <FetchEventLog
         v-if="!data.purged"
         :id="data.id"
-        :live="!['success', 'failed'].includes(data.status)"
+        :live="!['success', 'failed', 'aborted'].includes(data.status)"
       />
       <UAlert
         v-else

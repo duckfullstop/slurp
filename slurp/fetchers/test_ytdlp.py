@@ -3,7 +3,7 @@ import pytest
 import yt_dlp.utils
 
 from slurp.fetchers.types import Format
-from slurp.fetchers.ytdlp import YTDLPFetcher
+from slurp.fetchers.ytdlp import YTDLPFetcher, _make_cancel_hook
 
 _urls = {
     # The URLs in this dictionary are here purely because they serve as good tests. They are not an endorsement of the content.
@@ -92,3 +92,29 @@ class TestYTDLPFetcher:
         assert (tmp_path / "test.webm").exists(), (
             "output file does not exist (expected 'test.webm')"
         )
+
+
+class TestYTDLPFetcherAbort:
+    def test_abort_before_start(self, tmp_path):
+        events = list(
+            YTDLPFetcher().fetch(
+                "https://example.invalid/video",
+                Format.VIDEO_AUDIO,
+                str(tmp_path),
+                "out",
+                should_abort=lambda: True,
+            )
+        )
+        assert len(events) == 1
+        assert events[0].typ == "finish"
+        assert events[0].status == 1
+        assert events[0].message == "Fetcher aborted"
+
+    def test_cancel_hook_raises_when_aborted(self):
+        hook = _make_cancel_hook(lambda: True)
+        with pytest.raises(yt_dlp.utils.DownloadCancelled):
+            hook({"status": "downloading"})
+
+    def test_cancel_hook_noop_without_abort(self):
+        _make_cancel_hook(None)({"status": "downloading"})
+        _make_cancel_hook(lambda: False)({"status": "downloading"})

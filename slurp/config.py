@@ -53,4 +53,5 @@ class DefaultConfig:
         "broker_url": REDIS_URL,
         "result_backend": REDIS_URL,
         "task_ignore_result": True,
+        "task_track_started": True,
     }

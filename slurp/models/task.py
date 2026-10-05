@@ -1,6 +1,7 @@
 import datetime
 import enum
 
+from celery.contrib.abortable import AbortableAsyncResult
 from flask_sse import sse
 from redis_om import Field
 
@@ -45,10 +46,14 @@ class Fetch(BaseModel, index=True):
         created = "created"
         # "Running" tasks are in the process of being fetched.
         running = "running"
+        # "Aborting" tasks are in the process of being terminated mid-fetch.
+        aborting = "aborting"
         # "Success" tasks completed their fetch successfully.
         success = "success"
         # "Failed" tasks failed to process for some reason.
         failed = "failed"
+        # "Aborted" tasks were stopped midway, and are in an unknown state.
+        cancelled = "aborted"
         # "Completed" tasks is one where it finished executing, but we don't know the outcome for some reason.
         completed = "completed"
         # "Unknown" tasks are ones where the execution state is a mystery to us.
@@ -84,6 +89,39 @@ class Fetch(BaseModel, index=True):
         )
         db_log.save()
         sse.publish(db_log.model_dump_json())
+
+    def abort(self) -> None:
+        """
+        Attempt to cancel this Fetch if assigned to a worker.
+        :return: nothing
+        :raises: AssertionError
+        """
+        assert self.worker_id is not None, "worker not assigned to this Fetch"
+        assert self.status in (
+            self.TaskStatus.created,
+            self.TaskStatus.running,
+        ), "this task is not in an abortable state"
+
+        # The worker polls this flag. It lives outside the model so that the worker's own whole-model
+        # saves can't clobber it, and has an expiry so it can't outlive a task that never picks it up.
+        self.db().set(self._abort_key, 1, ex=60 * 60 * 24)
+
+        self.status = self.TaskStatus.aborting
+        self.save()
+
+        self.emit_event("abort_requested", "warning", "Abort requested")
+
+        AbortableAsyncResult(str(self.worker_id)).abort()
+
+    @property
+    def _abort_key(self) -> str:
+        return f"slurp:fetch:{self.pk}:abort"
+
+    def abort_requested(self) -> bool:
+        """
+        Whether an abort has been requested for this Fetch. Safe to call from the worker.
+        """
+        return bool(self.db().exists(self._abort_key))
 
 
 class FetchEvent(BaseModel, index=True):

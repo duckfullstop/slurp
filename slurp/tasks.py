@@ -1,3 +1,4 @@
+import contextlib
 import datetime
 import pathlib
 import tempfile
@@ -5,12 +6,14 @@ import tempfile
 from celery import Celery, Task, shared_task
 from celery.exceptions import InvalidTaskError
 from celery.schedules import crontab
+from celery.utils import uuid
 from flask import current_app
 from flask_sse import sse
 from werkzeug.exceptions import BadRequest
 
 from slurp.exceptions import FinaliserError
 from slurp.fetchers.exceptions import (
+    FetchAbortedError,
     FetchersExhaustedError,
     FetchLockedError,
     NoFetchersAvailable,
@@ -21,6 +24,7 @@ from slurp.fetchers.types import (
     FetcherProgressReport,
 )
 from slurp.finaliser import finalise, troubleshooter
+from slurp.flask_task import AbortableFlaskTask
 from slurp.models import Fetch, FetchMetadata
 from slurp.models.task import FetchEvent
 
@@ -54,7 +58,9 @@ def create_fetch(self: Task, url: str, fmt: str, target: str, slug: str) -> str:
         slug=slug,
     )
     task.status = Fetch.TaskStatus.created
-    task.worker_id = self.request.id
+    # Pre-assign the ID of the fetch job so it can be aborted even before a worker picks it up.
+    fetch_job_id = uuid()
+    task.worker_id = fetch_job_id
     task.save()
     assert task.pk is not None, "task pk was not set by flush"
 
@@ -70,16 +76,18 @@ def create_fetch(self: Task, url: str, fmt: str, target: str, slug: str) -> str:
     )
 
     # Enqueue.
-    fetch.delay(
-        pk=task.pk,
-    )
+    fetch.apply_async(kwargs={"pk": task.pk}, task_id=fetch_job_id)
     return task.pk
 
 
 @shared_task(
-    name="slurp.fetch", bind=True, dont_autoretry_for=(BadRequest,), acks_late=True
+    name="slurp.fetch",
+    bind=True,
+    dont_autoretry_for=(BadRequest,),
+    acks_late=True,
+    base=AbortableFlaskTask,
 )
-def fetch(self: Task, pk: str):
+def fetch(self: AbortableFlaskTask, pk: str):
     """
     Work the given fetch task, by downloading the media from the web, finalising it to the defined location.
     It is not intended to call this task directly - it is automatically enqueued by create_fetch.
@@ -111,6 +119,17 @@ def fetch(self: Task, pk: str):
         if not l_success:
             raise FetchLockedError
 
+        # Captured up front: fetchers may call should_abort from their own threads, where
+        # Celery's thread-local self.request is empty and is_aborted() would see an id of None.
+        job_id = self.request.id
+
+        def should_abort() -> bool:
+            return task.abort_requested() or self.is_aborted(task_id=job_id)
+
+        # Aborted while still queued - don't start.
+        if should_abort():
+            raise FetchAbortedError
+
         # Update the task status
         task.status = Fetch.TaskStatus.running
         task.worker_id = self.request.id
@@ -124,9 +143,14 @@ def fetch(self: Task, pk: str):
                 raise NoFetchersAvailable
 
             # Work in a temporary directory that gets torn down at the completion of this slurp run
-            with tempfile.TemporaryDirectory(
-                dir=current_app.config.get("OUTPUT_TEMP", None)
-            ) as tmp_dir:
+            # The ExitStack unwinds in reverse order, so fetcher generators are always closed
+            # (letting them stop their workers) before the directory is removed.
+            with contextlib.ExitStack() as stack:
+                tmp_dir = stack.enter_context(
+                    tempfile.TemporaryDirectory(
+                        dir=current_app.config.get("OUTPUT_TEMP", None)
+                    )
+                )
                 success: bool = False
                 media_path: str | None = None
                 for idx, fetcher in enumerate(fetchers):
@@ -140,9 +164,21 @@ def fetch(self: Task, pk: str):
                         f"{'Trying Fetch again' if idx > 0 else 'Fetching'} with {fetcher.name}",
                     )
                     # Call the fetcher module, and receive events from it
-                    for event in fetcher.fetch(
-                        task.url, task.format, tmp_dir, task.slug
-                    ):
+                    events = stack.enter_context(
+                        contextlib.closing(
+                            fetcher.fetch(
+                                task.url,
+                                task.format,
+                                tmp_dir,
+                                task.slug,
+                                should_abort=should_abort,
+                            )
+                        )
+                    )
+                    for event in events:
+                        # Fetchers that can't be interrupted themselves are stopped here, between events.
+                        if should_abort():
+                            raise FetchAbortedError
                         match event:
                             case FetcherMediaMetadataAvailable() as e:
                                 # Metadata for this fetch now available.
@@ -180,7 +216,7 @@ def fetch(self: Task, pk: str):
                                     if e.status == 0:
                                         # Success
                                         success = True
-                                    else:
+                                    elif not should_abort():
                                         task.emit_event(
                                             "log",
                                             "error",
@@ -190,8 +226,10 @@ def fetch(self: Task, pk: str):
 
                     if success:
                         break
+                    # An aborted fetcher must not fall through to the next one.
+                    if should_abort():
+                        raise FetchAbortedError
                 if not success:
-                    # yield "<article class='fetcher-outcome fetcher-progress-message-level-error'>☹️ Slurp failed - out of available fetchers.</article>"
                     raise FetchersExhaustedError
 
                 # Safety assertion
@@ -214,6 +252,8 @@ def fetch(self: Task, pk: str):
                     # yield f"<article class='fetcher-outcome fetcher-progress-message-level-error'>💣 Failed to finalise media: {e}</article>"
                     raise FinaliserError(e)
                 # yield f"<article class='fetcher-outcome fetcher-progress-message-level-success'>🥤 Media slurped to {final_path}</article>"
+        except FetchAbortedError:
+            raise
         except Exception as e:
             # Catch exceptions and set the task state appropriately.
             # Before that, run the troubleshooter to see if there's a reason the error happened.
@@ -250,6 +290,22 @@ def fetch(self: Task, pk: str):
         )
 
         return final_path
+    except FetchAbortedError:
+        # Not a failure - there was a request to stop
+        self.update_state(
+            status=Fetch.TaskStatus.cancelled.value, reason="Abort requested"
+        )
+        task.status = Fetch.TaskStatus.cancelled
+        task.save()
+        sse.publish(
+            {
+                "fetch_id": task.pk,
+                "state": Fetch.TaskStatus.cancelled.value,
+            },
+            type="fetch_updated",
+        )
+        task.emit_event("log", "warning", "Fetch aborted")
+        return None
     except Exception as e:
         # Mark the task failed and re-raise
         self.update_state(status=Fetch.TaskStatus.failed.value, reason=str(e))
