@@ -1,6 +1,7 @@
 import os
 import queue
 import threading
+import time
 from collections.abc import Callable, Generator
 from json import JSONDecodeError
 
@@ -123,11 +124,20 @@ class CobaltFetcher(Fetcher):
         return cfg
 
     def _get_media(
-        self, q: queue.Queue, url: str, fmt: Format, directory: str, filename: str
+        self,
+        q: queue.Queue,
+        url: str,
+        fmt: Format,
+        directory: str,
+        filename: str,
+        stop: threading.Event,
     ):
         """
-        Commence a download.
+        Commence a download. Stops quietly (without a finish event) once stop is set.
         """
+        if stop.is_set():
+            q.shutdown()
+            return
 
         # Scope response_data appropriately
         response_data: dict = {}
@@ -236,11 +246,18 @@ class CobaltFetcher(Fetcher):
 
                     q.put(FetcherProgressReport(typ="log", level="info", message=msg))
                     for data in r.iter_bytes():
+                        if stop.is_set():
+                            # Leaving the stream block closes the connection.
+                            break
                         f.write(data)
                         logger.debug(
                             f"written {r.num_bytes_downloaded} bytes from cobalt"
                         )
                         num_bytes_downloaded = r.num_bytes_downloaded
+
+                    if stop.is_set():
+                        q.shutdown()
+                        return
 
                     q.put(
                         FetcherProgressReport(
@@ -288,28 +305,45 @@ class CobaltFetcher(Fetcher):
     ) -> Generator[FetcherUpdateEvent]:
         """get_media downloads the media at the given params in the foreground, returning log information by means of a Generator."""
         q: queue.Queue[FetcherUpdateEvent] = queue.Queue()
+        stop = threading.Event()
 
         # We need to run the download on a thread so we can continue to execute our client response
         thread = threading.Thread(
-            target=self._get_media, args=(q, url, fmt, directory, filename), daemon=True
+            target=self._get_media,
+            args=(q, url, fmt, directory, filename, stop),
+            daemon=True,
         )
         thread.start()
 
-        while True:
-            try:
-                # Reasonably sane timeout, just to stop us endlessly spinning.
-                event: FetcherUpdateEvent = q.get(timeout=300)
-            except queue.ShutDown:
-                # End of data.
-                break
-            match event:
-                case FetcherProgressReport() as i:
-                    if i.typ == "finish":
-                        yield i
-                        # Break the generator.
+        try:
+            last_event = time.monotonic()
+            while True:
+                try:
+                    # Poll briefly so an abort request is noticed even while the backend is quiet.
+                    event: FetcherUpdateEvent = q.get(timeout=1)
+                except queue.ShutDown:
+                    # End of data.
+                    break
+                except queue.Empty:
+                    if should_abort is not None and should_abort():
                         break
-                    yield i
-                case FetcherMediaMetadataAvailable() as i:
-                    yield i
-                case FetcherMediaAvailable() as i:
-                    yield i
+                    if time.monotonic() - last_event > 300:
+                        raise TimeoutError("cobalt produced no output for 300s")
+                    continue
+                last_event = time.monotonic()
+                match event:
+                    case FetcherProgressReport() as i:
+                        if i.typ == "finish":
+                            yield i
+                            # Break the generator.
+                            break
+                        yield i
+                    case FetcherMediaMetadataAvailable() as i:
+                        yield i
+                    case FetcherMediaAvailable() as i:
+                        yield i
+        finally:
+            # Also reached when the caller closes the generator. Stop the worker, and don't let the
+            # caller tear down the working directory while it may still be writing to it.
+            stop.set()
+            thread.join(timeout=30)

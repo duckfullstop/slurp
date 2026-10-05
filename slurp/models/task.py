@@ -90,6 +90,13 @@ class Fetch(BaseModel, index=True):
         db_log.save()
         sse.publish(db_log.model_dump_json())
 
+    def save(self, **kwargs):
+        # The worker saves its whole in-memory copy, which may predate an abort request.
+        # Don't let that revert "aborting" back to "running".
+        if self.status == self.TaskStatus.running and self.abort_requested():
+            self.status = self.TaskStatus.aborting
+        super().save(**kwargs)
+
     def abort(self) -> None:
         """
         Attempt to cancel this Fetch if assigned to a worker.

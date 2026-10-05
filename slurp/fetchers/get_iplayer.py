@@ -4,9 +4,11 @@ import os
 import pathlib
 import queue
 import shutil
+import signal
 import subprocess
 import tempfile
 import threading
+import time
 from collections.abc import Callable, Generator
 from datetime import datetime
 from glob import glob
@@ -25,6 +27,50 @@ from slurp.fetchers.types import (
     Format,
     MediaMetadata,
 )
+
+
+class _Run:
+    """
+    _Run tracks the get_iplayer subprocesses belonging to a single fetch, so that they can be killed
+    from outside the worker thread (which is usually blocked reading their output).
+    """
+
+    def __init__(self) -> None:
+        self.stop = threading.Event()
+        self._lock = threading.Lock()
+        self._procs: list[subprocess.Popen] = []
+
+    def spawn(self, args: list[str], **kwargs) -> subprocess.Popen:
+        """Start a subprocess in its own process group. Raises if the run has already been stopped."""
+        with self._lock:
+            if self.stop.is_set():
+                raise InterruptedError("fetch aborted")
+            # get_iplayer spawns children (ffmpeg etc.), so we need to be able to signal the whole group.
+            proc = subprocess.Popen(args, start_new_session=True, **kwargs)
+            self._procs.append(proc)
+            return proc
+
+    def kill(self) -> None:
+        """Stop the run, terminating (then if necessary killing) every process group it started."""
+        with self._lock:
+            self.stop.set()
+            # Skip anything already reaped, so we never signal a recycled process group.
+            procs = [p for p in self._procs if p.poll() is None]
+        for sig in (signal.SIGTERM, signal.SIGKILL):
+            for proc in procs:
+                try:
+                    os.killpg(proc.pid, sig)
+                except (ProcessLookupError, PermissionError):
+                    pass
+            deadline = time.monotonic() + 5
+            for proc in procs:
+                try:
+                    proc.wait(timeout=max(0.0, deadline - time.monotonic()))
+                except subprocess.TimeoutExpired:
+                    pass
+            procs = [p for p in procs if p.poll() is None]
+            if not procs:
+                return
 
 
 class BBCiPlayerFetcher(Fetcher):
@@ -86,29 +132,41 @@ class BBCiPlayerFetcher(Fetcher):
                 typ="log", level="debug", message=log.replace("DEBUG: ", "")
             )
 
-    def _get_metadata(self, url: str) -> MediaMetadata:
-        """_get_metadata returns MediaMetadata for the given url."""
+    def _get_metadata(self, url: str, run: _Run | None = None) -> MediaMetadata:
+        """_get_metadata returns MediaMetadata for the given url. If run is given, the call can be aborted through it."""
 
         # get_iplayer spews metadata in a very annoying way (to allow for listing).
         # To solve this, we call the binary and get it to dump metadata to a temporary directory,
         # then attempt to find that - loading it in if we succeed.
         with tempfile.TemporaryDirectory() as tmpdir:
-            proc = subprocess.run(
-                [
-                    "get_iplayer",
-                    url,
-                    "--metadata-only",
-                    "--metadata=json",
-                    "--overwrite",
-                    f"--output={tmpdir}",
-                ],
-                capture_output=True,
-                text=True,
-                timeout=300,
-            )
-            assert proc.returncode == 0, (
-                f"get_iplayer failed with code {proc.returncode}"
-            )
+            args = [
+                "get_iplayer",
+                url,
+                "--metadata-only",
+                "--metadata=json",
+                "--overwrite",
+                f"--output={tmpdir}",
+            ]
+            if run is None:
+                returncode = subprocess.run(
+                    args, capture_output=True, text=True, timeout=300
+                ).returncode
+            else:
+                mproc = run.spawn(
+                    args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+                try:
+                    mproc.communicate(timeout=300)
+                except subprocess.TimeoutExpired:
+                    run.kill()
+                    raise
+                returncode = mproc.returncode
+            if run is not None and run.stop.is_set():
+                raise InterruptedError("fetch aborted")
+            assert returncode == 0, f"get_iplayer failed with code {returncode}"
 
             # Find the metadata file.
             meta_files = os.listdir(tmpdir)
@@ -164,14 +222,14 @@ class BBCiPlayerFetcher(Fetcher):
         fmt: Format,
         directory: str,
         filename: str,
+        run: _Run,
     ):
         """
-        Commence a download from BBC iPlayer.
-        Consider threading this to allow for asynchronous downloads.
+        Commence a download from BBC iPlayer. Stops quietly (without a finish event) if run is killed.
         """
         try:
             # We support early metadata - send that if it's available.
-            metadata = self._get_metadata(url)
+            metadata = self._get_metadata(url, run)
             if metadata.name != "":
                 event = FetcherMediaMetadataAvailable(metadata=metadata)
                 q.put(event)
@@ -185,7 +243,7 @@ class BBCiPlayerFetcher(Fetcher):
                     )
                 )
 
-            proc = subprocess.Popen(
+            proc = run.spawn(
                 [
                     "get_iplayer",
                     "-g",
@@ -205,7 +263,9 @@ class BBCiPlayerFetcher(Fetcher):
                 q.put(self._log_emit(o))
 
             # Wait for process to finish returning
-            proc.poll()
+            proc.wait()
+            if run.stop.is_set():
+                return
             assert proc.returncode == 0, (
                 f"get_iplayer failed with code {proc.returncode}"
             )
@@ -247,6 +307,9 @@ class BBCiPlayerFetcher(Fetcher):
                 )
             )
         except Exception as e:
+            if run.stop.is_set():
+                # Aborted - nobody is listening for the outcome.
+                return
             q.put(
                 FetcherProgressReport(
                     typ="finish",
@@ -269,28 +332,45 @@ class BBCiPlayerFetcher(Fetcher):
     ) -> Generator[FetcherUpdateEvent]:
         """get_media downloads the media at the given params in the foreground, returning log information by means of a Generator."""
         q: queue.Queue[FetcherUpdateEvent] = queue.Queue()
+        run = _Run()
 
         # We need to run the download on a thread so we can continue to execute our client response
         thread = threading.Thread(
-            target=self._get_media, args=(q, url, fmt, directory, filename), daemon=True
+            target=self._get_media,
+            args=(q, url, fmt, directory, filename, run),
+            daemon=True,
         )
         thread.start()
 
-        while True:
-            try:
-                # Reasonably sane timeout, just to stop us endlessly spinning.
-                event: FetcherUpdateEvent = q.get(timeout=300)
-            except queue.ShutDown:
-                # End of data.
-                break
-            match event:
-                case FetcherProgressReport() as i:
-                    if i.typ == "finish":
-                        yield i
-                        # Break the generator.
+        try:
+            last_event = time.monotonic()
+            while True:
+                try:
+                    # Poll briefly so an abort request is noticed even while get_iplayer is quiet.
+                    event: FetcherUpdateEvent = q.get(timeout=1)
+                except queue.ShutDown:
+                    # End of data.
+                    break
+                except queue.Empty:
+                    if should_abort is not None and should_abort():
                         break
-                    yield i
-                case FetcherMediaMetadataAvailable() as i:
-                    yield i
-                case FetcherMediaAvailable() as i:
-                    yield i
+                    if time.monotonic() - last_event > 300:
+                        raise TimeoutError("get_iplayer produced no output for 300s")
+                    continue
+                last_event = time.monotonic()
+                match event:
+                    case FetcherProgressReport() as i:
+                        if i.typ == "finish":
+                            yield i
+                            # Break the generator.
+                            break
+                        yield i
+                    case FetcherMediaMetadataAvailable() as i:
+                        yield i
+                    case FetcherMediaAvailable() as i:
+                        yield i
+        finally:
+            # Also reached when the caller closes the generator. Kill get_iplayer and its children, and
+            # don't let the caller tear down the working directory while they may still be writing to it.
+            run.kill()
+            thread.join(timeout=30)
