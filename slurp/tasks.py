@@ -7,7 +7,6 @@ from celery import Celery, Task, shared_task
 from celery.exceptions import InvalidTaskError
 from celery.schedules import crontab
 from celery.utils import uuid
-from finaliser import sanity_checker
 from flask import current_app
 from flask_sse import sse
 from werkzeug.exceptions import BadRequest
@@ -24,7 +23,7 @@ from slurp.fetchers.types import (
     FetcherMediaMetadataAvailable,
     FetcherProgressReport,
 )
-from slurp.finaliser import finalise, troubleshooter
+from slurp.finaliser import finalise, sanity_checker, troubleshooter
 from slurp.flask_task import AbortableFlaskTask
 from slurp.models import Fetch, FetchMetadata
 from slurp.models.task import FetchEvent
