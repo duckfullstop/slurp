@@ -43,7 +43,11 @@ class Fetch(BaseModel, index=True):
 
     class TaskStatus(str, enum.Enum):
         # "created" tasks are awaiting processing or assignment to a worker.
+        # A task may only be "created" once - if it is requeued, it should be "scheduled" instead.
         created = "created"
+        # "scheduled" tasks have been assigned a worker ID, added to the Celery queue, and will start running once a Worker is available.
+        # A task may become Scheduled after it has failed or been aborted.
+        scheduled = "scheduled"
         # "Running" tasks are in the process of being fetched.
         running = "running"
         # "Aborting" tasks are in the process of being terminated mid-fetch.
@@ -75,6 +79,10 @@ class Fetch(BaseModel, index=True):
 
     # Whether this fetch has had its logs and events destroyed.
     purged: bool = Field(index=True, default=False)
+
+    # Whether to ignore any sanity checks imposed upon this Fetch (through the sanity_check function)
+    # Warning - enabling this can result in huge files getting downloaded!
+    force: bool = Field(default=False)
 
     def lock(self, *args, **kwargs):
         return self.db().lock(name=self.pk, *args, **kwargs)

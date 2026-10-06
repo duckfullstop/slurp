@@ -1,20 +1,41 @@
+import logging
 import shutil
 from collections.abc import Generator
 from urllib.parse import SplitResult, urlsplit
 
 from flask import current_app
 from httpx import HTTPError
+from models import FetchMetadata
 from pymediainfo import MediaInfo
 
 from slurp.fetchers.types import (
     FetcherMediaAvailable,
     FetcherProgressReport,
     FetcherUpdateEvent,
+    MediaMetadata,
 )
 from slurp.lib.yt_block_check import InvalidUrlException, YtBlockCheck, hostSuffixes
 from slurp.models import Fetch
 
 _acceptable_frame_rates = [23.976, 24, 25, 29.97, 30, 50, 59.94, 60]
+
+
+def sanity_checker(metadata: FetchMetadata) -> list[str]:
+    """
+    The Sanity Checker checks whether the given Metadata passes certain basic checks, such as for excessive length.
+    :return: A list of problems with the media. Empty list means no problems.
+    """
+    problems = []
+
+    # Duration check
+    if metadata.duration is not None:
+        if metadata.duration > current_app.config.get("SANITY_MAX_DURATION", 3600):
+            problems.append(
+                f"Media is longer than the configured limit of {current_app.config.get('SANITY_MAX_DURATION', 3600)} seconds."
+            )
+    else:
+        logging.debug("Media duration is None - skipping check")
+    return problems
 
 
 def troubleshooter(fetch: Fetch) -> Generator[FetcherUpdateEvent]:

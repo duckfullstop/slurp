@@ -7,6 +7,7 @@ from celery import Celery, Task, shared_task
 from celery.exceptions import InvalidTaskError
 from celery.schedules import crontab
 from celery.utils import uuid
+from finaliser import sanity_checker
 from flask import current_app
 from flask_sse import sse
 from werkzeug.exceptions import BadRequest
@@ -35,7 +36,9 @@ from slurp.models.task import FetchEvent
     dont_autoretry_for=(BadRequest,),
     ignore_result=False,
 )
-def create_fetch(self: Task, url: str, fmt: str, target: str, slug: str) -> str:
+def create_fetch(
+    self: Task, url: str, fmt: str, target: str, slug: str, force: bool = False
+) -> str:
     """
     Create and enqueue the given media for fetching.
     :param self: Celery task object.
@@ -43,6 +46,7 @@ def create_fetch(self: Task, url: str, fmt: str, target: str, slug: str) -> str:
     :param fmt: Format to perform the download in as defined by fetchers.types.Format.
     :param target: Target output directory. Must be configured.
     :param slug: Output filename.
+    :param force: Ignore sanity checks.
     :return: Created Fetch's PK.
     """
     # Safety: Validate the destination is permitted
@@ -56,11 +60,9 @@ def create_fetch(self: Task, url: str, fmt: str, target: str, slug: str) -> str:
         format=fmt,
         target=target,
         slug=slug,
+        force=force,
     )
     task.status = Fetch.TaskStatus.created
-    # Pre-assign the ID of the fetch job so it can be aborted even before a worker picks it up.
-    fetch_job_id = uuid()
-    task.worker_id = fetch_job_id
     task.save()
     assert task.pk is not None, "task pk was not set by flush"
 
@@ -71,13 +73,40 @@ def create_fetch(self: Task, url: str, fmt: str, target: str, slug: str) -> str:
             "format": task.format,
             "target": task.target,
             "slug": task.slug,
+            "force": task.force,
         },
         type="task_created",
     )
 
     # Enqueue.
-    fetch.apply_async(kwargs={"pk": task.pk}, task_id=fetch_job_id)
+    enqueue_fetch.apply_async(kwargs={"pk": task.pk})
     return task.pk
+
+
+@shared_task(
+    name="slurp.enqueue_fetch",
+    dont_autoretry_for=(BadRequest,),
+    ignore_result=False,
+)
+def enqueue_fetch(pk: str):
+    task = Fetch.find(Fetch.pk == pk).first()
+    if not task:
+        raise BadRequest(f"Task {pk} does not exist on database")
+
+    # Pre-assign the ID of the fetch job so it can be aborted even before a worker picks it up.
+    fetch_job_id = uuid()
+    task.worker_id = fetch_job_id
+    task.save()
+
+    sse.publish(
+        {"task_id": task.pk},
+        type="task_enqueued",
+    )
+    task.emit_event("log", "info", f"Task {pk} enqueued with job ID {fetch_job_id}")
+
+    # Enqueue.
+    fetch.apply_async(kwargs={"pk": task.pk}, task_id=fetch_job_id)
+    return fetch_job_id
 
 
 @shared_task(
@@ -206,6 +235,35 @@ def fetch(self: AbortableFlaskTask, pk: str):
                                     "info",
                                     "Metadata successfully fetched",
                                 )
+                                # Run the sanity checker if it is not explicitly disabled
+                                if current_app.config.get("SANITY_ENABLED", True):
+                                    issues = sanity_checker(db_meta)
+                                    if len(issues) > 0:
+                                        # Issues were detected
+                                        task.emit_event(
+                                            "log",
+                                            "warning",
+                                            "The Sanity Checker detected issues:",
+                                        )
+                                        for i, issue in enumerate(issues):
+                                            task.emit_event(
+                                                "log", "warning", f"- {i + 1}: {issue}"
+                                            )
+                                        if not task.force:
+                                            task.emit_event(
+                                                "log",
+                                                "error",
+                                                "Aborting the Fetch - to retry, requeue this Fetch with the 'force' option.",
+                                            )
+                                            raise FetchAbortedError(
+                                                "Sanity checker detected issues"
+                                            )
+                                        else:
+                                            task.emit_event(
+                                                "log",
+                                                "warning",
+                                                "Ignoring these issues as Force is set.",
+                                            )
                             case FetcherMediaAvailable() as e:
                                 media_path = e.path
                             case FetcherProgressReport() as e:
