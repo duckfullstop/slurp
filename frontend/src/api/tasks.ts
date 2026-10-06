@@ -83,3 +83,15 @@ export async function abortTask(id: string): Promise<Task> {
   }
   return res.json() as Promise<Task>
 }
+
+export async function retryTask({id, force}: { id: string, force?: boolean }): Promise<Task> {
+  const res = await fetch(`/api/v1/task/${id}/retry`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({force: !!force})
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to retry task ${id}: ${res.status} ${res.statusText}`)
+  }
+  return res.json() as Promise<Task>
+}

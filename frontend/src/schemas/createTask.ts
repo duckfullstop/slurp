@@ -13,6 +13,7 @@ export const createTaskSchema = z.object({
   }).min(1, 'Please enter a slug'),
   format: z.enum(['VIDEO_AUDIO', 'VIDEO_ONLY', 'AUDIO_ONLY']),
   target: z.string().min(1, 'Choose a target directory'),
+  force: z.boolean().optional(),
 })
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>
