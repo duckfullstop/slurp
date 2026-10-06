@@ -26,6 +26,14 @@ class DefaultConfig:
     ## Prune after this many hours:
     PRUNE_AFTER: int = 168  # 7 days
 
+    # Sanity checker settings
+    SANITY_ENABLED: bool = True
+    # Whether to check the duration reported by a video.
+    SANITY_DURATION_ENABLED: bool = True
+    # What the maximum duration of a video is allowed to be, in seconds.
+    # By default, this is 5400 (1 hour 30 minutes).
+    SANITY_DURATION_MAX: int = 5400
+
     # External API keys
     ## YouTube Data API key. Get a token from the Google Cloud console - https://developers.google.com/youtube/v3/getting-started
     EXT_API_YT_TOKEN: str | None = None

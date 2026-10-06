@@ -14,7 +14,7 @@ from redis_om import model
 
 from slurp.fetchers.types import Format
 from slurp.models.task import Fetch, FetchEvent
-from slurp.tasks import create_fetch
+from slurp.tasks import create_fetch, enqueue_fetch
 
 api = Namespace("task", description="Fetch tasks")
 
@@ -82,17 +82,19 @@ createTask = api.model(
     "CreateTask",
     {
         "url": fields.String(description="URL that should be fetched", required=True),
-        "format_video": fields.Boolean(
-            description="Download the video element of this media", default=True
-        ),
-        "format_audio": fields.Boolean(
-            description="Download the audio element of this media", default=True
+        "format": fields.String(
+            description="Download format, by name",
+            enum=list(Format.__members__),
+            required=True,
         ),
         "slug": fields.String(description="Slug to save fetch as", required=True),
         "target": fields.String(
             description="Filesystem target identifier. This MUST be a valid destination as configured.",
             required=True,
         ),  # make this not required?
+        "force": fields.Boolean(
+            description="Ignore sanity checks when fetching", default=False
+        ),
     },
 )
 
@@ -126,6 +128,7 @@ class CreateTaskSchema(BaseModel):
     target: str = Field(
         description="Filesystem target identifier. This MUST be a valid destination as configured."
     )
+    force: bool = Field(default=False, description="Ignore sanity checks when fetching")
 
 
 @api.route("/")
@@ -143,6 +146,7 @@ class List(Resource):
         return fetches
 
     @api.doc("create_task")
+    @api.expect(createTask)
     # @api.marshal_with(fetchTask)
     def post(self):
         try:
@@ -172,6 +176,7 @@ class List(Resource):
                 fmt=data.format,
                 target=data.target,
                 slug=data.slug,
+                force=data.force,
             )
             # Await the result from the worker.
             return {"fetch_id": result.get()}, 201
@@ -211,6 +216,71 @@ class TaskCancel(Resource):
             fetch.abort()
         except AssertionError as e:
             return abort(400, str(e))
+        return fetch
+
+
+class RetryTaskSchema(BaseModel):
+    force: bool = Field(
+        default=False, description="Ignore sanity checks when retrying this task"
+    )
+
+
+retryTask = api.model(
+    "RetryTask",
+    {
+        "force": fields.Boolean(
+            description="Ignore sanity checks when retrying this task", default=False
+        ),
+    },
+)
+
+
+@api.route("/<string:task_id>/retry")
+class TaskRetry(Resource):
+    @api.doc("retry_task")
+    @api.expect(retryTask)
+    @api.marshal_with(fetchTask)
+    def post(self, task_id):
+        """
+        Retry an existing task.
+        The task must be in either the "success", "failed" or "cancelled" states.
+        If "force" is set, the task's force option is updated before it is requeued.
+        """
+        # The body is optional - an empty request retries with the task's existing settings.
+        if request.is_json:
+            raw_data = request.get_json(silent=True) or {}
+        else:
+            raw_data = request.form.to_dict()
+
+        try:
+            data = RetryTaskSchema(**raw_data)
+        except ValidationError as e:
+            return {"message": "Validation failed", "errors": e.errors()}, 400
+
+        try:
+            fetch = Fetch.get(task_id)
+        except model.NotFoundError:
+            return abort(404)
+        assert fetch.pk, "fetch does not have a primary key - this should never happen"
+
+        if fetch.status not in (
+            fetch.TaskStatus.success,
+            fetch.TaskStatus.failed,
+            fetch.TaskStatus.cancelled,
+        ):
+            return abort(400, "task not in retryable state")
+
+        fetch.emit_event("log", "info", "Retrying fetch task")
+
+        # Persist the new force value before requeuing, as enqueue_fetch reloads the fetch from the database.
+        fetch.force = data.force
+        fetch.save()
+
+        try:
+            worker_id = enqueue_fetch(fetch.pk)
+        except AssertionError as e:
+            return abort(400, str(e))
+        fetch.worker_id = worker_id
         return fetch
 
 
