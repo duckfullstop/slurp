@@ -12,7 +12,6 @@ from slurp.fetchers.types import (
     FetcherMediaAvailable,
     FetcherProgressReport,
     FetcherUpdateEvent,
-    MediaMetadata,
 )
 from slurp.lib.yt_block_check import InvalidUrlException, YtBlockCheck, hostSuffixes
 from slurp.models import Fetch
