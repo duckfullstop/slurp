@@ -5,7 +5,6 @@ from urllib.parse import SplitResult, urlsplit
 
 from flask import current_app
 from httpx import HTTPError
-from models import FetchMetadata
 from pymediainfo import MediaInfo
 
 from slurp.fetchers.types import (
@@ -14,7 +13,7 @@ from slurp.fetchers.types import (
     FetcherUpdateEvent,
 )
 from slurp.lib.yt_block_check import InvalidUrlException, YtBlockCheck, hostSuffixes
-from slurp.models import Fetch
+from slurp.models import Fetch, FetchMetadata
 
 _acceptable_frame_rates = [23.976, 24, 25, 29.97, 30, 50, 59.94, 60]
 
