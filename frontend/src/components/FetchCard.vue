@@ -94,7 +94,10 @@ function onRetry() {
   })
 }
 
-const canRetry = computed(() => ['success', 'failed', 'aborted'].includes(props.task.status))
+// retrying a successful fetch is rarely wanted, so only offer it on the detail page (extended)
+const canRetry = computed(() =>
+  ['failed', 'aborted'].includes(props.task.status) || (props.extended && props.task.status === 'success')
+)
 
 const canAbort = computed(() => ['created', 'running'].includes(props.task.status))
 
@@ -187,127 +190,128 @@ const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
         </UBadge>
       </template>
       <template #footer>
-        <div class="space-x-1 flex items-center justify-center">
-          <UTooltip
-            :delay-duration="0"
-            text="Fetch Requested time"
-          >
-            <UBadge
-              v-if="task.ts_created"
-              class="font-mono"
-              color="neutral"
-              variant="outline"
+        <div class="flex flex-wrap items-center justify-between gap-1">
+          <div class="space-x-1 flex items-center">
+            <UTooltip
+              :delay-duration="0"
+              text="Fetch Requested time"
             >
-              <UIcon name="pepicons-pop:clock" />
-              {{ tsCreatedUTC }} UTC
-            </UBadge>
-          </UTooltip>
-          <UTooltip
-            :delay-duration="0"
-            text="Slurp Job ID"
-          >
-            <UBadge
-              color="neutral"
-              variant="outline"
-              class="font-mono"
-            >
-              <UIcon name="pepicons-pop:soft-drink-circle" />
-              <span
-                v-if="props.extended"
-                class="text-muted"
+              <UBadge
+                v-if="task.ts_created"
+                class="font-mono"
+                color="neutral"
+                variant="outline"
               >
-                {{ task.id.slice(0, -4) }}
-              </span>
-              <span class="font-bold">
-                {{ task.id.slice(-4) }}
-              </span>
-            </UBadge>
-          </UTooltip>
+                <UIcon name="pepicons-pop:clock" />
+                {{ tsCreatedUTC }} UTC
+              </UBadge>
+            </UTooltip>
+            <UTooltip
+              :delay-duration="0"
+              text="Slurp Job ID"
+            >
+              <UBadge
+                color="neutral"
+                variant="outline"
+                class="font-mono"
+              >
+                <UIcon name="pepicons-pop:soft-drink-circle" />
+                <span
+                  v-if="props.extended"
+                  class="text-muted"
+                >
+                  {{ task.id.slice(0, -4) }}
+                </span>
+                <span class="font-bold">
+                  {{ task.id.slice(-4) }}
+                </span>
+              </UBadge>
+            </UTooltip>
 
-          <UBadge
-            v-if="task.purged"
-            class="align-self-center"
-            color="error"
-            variant="outline"
-          >
-            <UIcon name="material-symbols:skull" />
-            Logs Expired
-          </UBadge>
-          <UBadge
-            v-else-if="task.pruned"
-            class="align-self-center"
-            color="warning"
-            variant="outline"
-          >
-            <UIcon name="material-symbols:auto-delete" />
-            Data Removed
-          </UBadge>
-        </div>
-        <div class="mt-1 space-x-1 flex items-center">
-          <UIcon name="pepicons-pop:arrow-right" />
-          <UTooltip
-            v-if="canAbort"
-            :delay-duration="0"
-            text="Abort this Fetch"
-          >
-            <UButton
-              :color="abortError ? 'error' : 'warning'"
-              :disabled="!canAbort"
-              :loading="isAborting"
-              icon="material-symbols:cancel"
-              size="xs"
-              variant="soft"
-              @click.prevent.stop="onAbortClick"
+            <UBadge
+              v-if="task.purged"
+              class="align-self-center"
+              color="error"
+              variant="outline"
             >
-              Abort
-            </UButton>
-          </UTooltip>
-          <UTooltip
-            v-if="canRetry"
-            :delay-duration="0"
-            :text="retryForced ? 'Retry this Fetch (forced)' : 'Retry this Fetch'"
-          >
-            <UButton
-              :color="retryError ? 'error' : 'info'"
-              :disabled="!canRetry"
-              :loading="isRetrying"
-              icon="material-symbols:replay"
-              size="xs"
-              variant="soft"
-              @click.prevent.stop="onRetryClick"
+              <UIcon name="material-symbols:skull" />
+              Logs Expired
+            </UBadge>
+            <UBadge
+              v-else-if="task.pruned"
+              class="align-self-center"
+              color="warning"
+              variant="outline"
             >
-              <b v-if="retryForced">Force Retry</b>
-              <b v-else>Retry</b>
-            </UButton>
-          </UTooltip>
-          <ForceConfirmModal
-            v-model:open="retryConfirmOpen"
-            @confirm="onRetry"
-          />
-          <UModal
-            v-model:open="confirmOpen"
-            :description="`This will attempt to abort fetch ${task.id.slice(-4)} (${task.url}), and may leave the fetch in an invalid state.`"
-            title="Abort this Fetch?"
-          >
-            <template #footer>
-              <div class="flex w-full justify-end gap-2">
-                <UButton
-                  color="neutral"
-                  variant="outline"
-                  @click="confirmOpen = false"
-                >
-                  Cancel
-                </UButton>
-                <UButton
-                  color="warning"
-                  icon="material-symbols:cancel"
-                  @click="onAbort"
-                >
-                  Request Abort
-                </UButton>
-              </div>
-            </template>
-          </UModal>
+              <UIcon name="material-symbols:auto-delete" />
+              Data Removed
+            </UBadge>
+          </div>
+          <div class="ml-auto space-x-1 flex items-center">
+            <UTooltip
+              v-if="canAbort"
+              :delay-duration="0"
+              text="Abort this Fetch"
+            >
+              <UButton
+                :color="abortError ? 'error' : 'warning'"
+                :disabled="!canAbort"
+                :loading="isAborting"
+                icon="material-symbols:cancel"
+                size="xs"
+                variant="soft"
+                @click.prevent.stop="onAbortClick"
+              >
+                Abort
+              </UButton>
+            </UTooltip>
+            <UTooltip
+              v-if="canRetry"
+              :delay-duration="0"
+              :text="retryForced ? 'Retry this Fetch (forced)' : 'Retry this Fetch'"
+            >
+              <UButton
+                :color="retryError ? 'error' : 'info'"
+                :disabled="!canRetry"
+                :loading="isRetrying"
+                icon="material-symbols:replay"
+                size="xs"
+                variant="soft"
+                @click.prevent.stop="onRetryClick"
+              >
+                <b v-if="retryForced">Force Retry</b>
+                <b v-else>Retry</b>
+              </UButton>
+            </UTooltip>
+            <ForceConfirmModal
+              v-model:open="retryConfirmOpen"
+              @confirm="onRetry"
+            />
+            <UModal
+              v-model:open="confirmOpen"
+              :description="`This will attempt to abort fetch ${task.id.slice(-4)} (${task.url}), and may leave the fetch in an invalid state.`"
+              title="Abort this Fetch?"
+            >
+              <template #footer>
+                <div class="flex w-full justify-end gap-2">
+                  <UButton
+                    color="neutral"
+                    variant="outline"
+                    @click="confirmOpen = false"
+                  >
+                    Cancel
+                  </UButton>
+                  <UButton
+                    color="warning"
+                    icon="material-symbols:cancel"
+                    @click="onAbort"
+                  >
+                    Request Abort
+                  </UButton>
+                </div>
+              </template>
+            </UModal>
+          </div>
         </div>
       </template>
     </UPageCard>
