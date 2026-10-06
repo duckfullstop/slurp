@@ -1,6 +1,6 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/vue-query'
 import {computed, type MaybeRefOrGetter, toValue} from 'vue'
-import {abortTask, createTask, fetchTask, fetchTaskEvents, fetchTasks} from '../api/tasks'
+import {abortTask, createTask, fetchTask, fetchTaskEvents, fetchTasks, retryTask} from '../api/tasks'
 
 export function useTasksQuery() {
   return useQuery({
@@ -40,6 +40,18 @@ export function useAbortTaskMutation() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: abortTask,
+    onSuccess: (task) => {
+      queryClient.setQueryData(['task', task.id], task)
+      queryClient.invalidateQueries({queryKey: ['tasks']})
+      queryClient.invalidateQueries({queryKey: ['taskEvents', task.id]})
+    }
+  })
+}
+
+export function useRetryTaskMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: retryTask,
     onSuccess: (task) => {
       queryClient.setQueryData(['task', task.id], task)
       queryClient.invalidateQueries({queryKey: ['tasks']})

@@ -4,8 +4,9 @@ import {computed, ref} from "vue";
 import {Task} from "../api/tasks.ts";
 import {utc} from "@date-fns/utc";
 import {floor} from "lib0/math";
+import ForceConfirmModal from "./ForceConfirmModal.vue";
 import {getSafeUrl} from "../utils/url.ts";
-import {useAbortTaskMutation} from "../composables/useTasks.ts";
+import {useAbortTaskMutation, useRetryTaskMutation} from "../composables/useTasks.ts";
 
 const props = defineProps<{
   task: Task,
@@ -43,6 +44,8 @@ const tsCreatedUTC = computed(() => format(parseJSON(props.task.ts_created), 'yy
 const toast = useToast()
 const {mutate: abort, isPending: isAborting, error: abortError} = useAbortTaskMutation()
 
+const {mutate: retry, isPending: isRetrying, error: retryError} = useRetryTaskMutation()
+
 const confirmOpen = ref(false)
 
 // the detail page (extended) aborts immediately; the list view asks first
@@ -65,6 +68,33 @@ function onAbort() {
     }),
   })
 }
+
+// aborted fetches may be in an unknown state, so retrying them must bypass the sanity checks
+const retryForced = computed(() => props.task.status === 'aborted')
+
+const retryConfirmOpen = ref(false)
+
+// forced retries skip the sanity checks, so ask first
+function onRetryClick() {
+  if (retryForced.value) {
+    retryConfirmOpen.value = true
+  } else {
+    onRetry()
+  }
+}
+
+function onRetry() {
+  retry({id: props.task.id, force: retryForced.value}, {
+    onError: (err) => toast.add({
+      title: 'Failed to retry fetch ' + props.task.id.slice(-4),
+      description: err.message,
+      icon: 'pepicons-pop:exclamation-circle-filled',
+      color: 'error',
+    }),
+  })
+}
+
+const canRetry = computed(() => ['success', 'failed', 'aborted'].includes(props.task.status))
 
 const canAbort = computed(() => ['created', 'running'].includes(props.task.status))
 
@@ -215,10 +245,10 @@ const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
         </div>
         <div class="mt-1 space-x-1 flex items-center">
           <UIcon name="pepicons-pop:arrow-right" />
-          <!-- v-if="canAbort" -->
           <UTooltip
+            v-if="canAbort"
             :delay-duration="0"
-            :text="canAbort ? 'Abort this Fetch' : 'Cannot abort this task'"
+            text="Abort this Fetch"
           >
             <UButton
               :color="abortError ? 'error' : 'warning'"
@@ -232,6 +262,28 @@ const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
               Abort
             </UButton>
           </UTooltip>
+          <UTooltip
+            v-if="canRetry"
+            :delay-duration="0"
+            :text="retryForced ? 'Retry this Fetch (forced)' : 'Retry this Fetch'"
+          >
+            <UButton
+              :color="retryError ? 'error' : 'info'"
+              :disabled="!canRetry"
+              :loading="isRetrying"
+              icon="material-symbols:replay"
+              size="xs"
+              variant="soft"
+              @click.prevent.stop="onRetryClick"
+            >
+              <b v-if="retryForced">Force Retry</b>
+              <b v-else>Retry</b>
+            </UButton>
+          </UTooltip>
+          <ForceConfirmModal
+            v-model:open="retryConfirmOpen"
+            @confirm="onRetry"
+          />
           <UModal
             v-model:open="confirmOpen"
             :description="`This will attempt to abort fetch ${task.id.slice(-4)} (${task.url}), and may leave the fetch in an invalid state.`"

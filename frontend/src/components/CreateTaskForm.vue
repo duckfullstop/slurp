@@ -4,6 +4,7 @@ import type {Form, FormSubmitEvent, SelectItem} from '@nuxt/ui'
 import {useCreateTaskMutation} from '../composables/useTasks'
 import {type CreateTaskInput, createTaskSchema, FORMAT_OPTIONS} from '../schemas/createTask'
 import {useRouter} from "vue-router";
+import ForceConfirmModal from './ForceConfirmModal.vue'
 import {useConfigQuery} from "../composables/useConfig.ts";
 
 const toast = useToast()
@@ -18,6 +19,15 @@ const form = ref<Form<CreateTaskInput> | null>(null)
 // Tracks which button triggered the form submission
 type SubmitAction = 'redirect' | 'background'
 const submitAction = ref<SubmitAction>('redirect')
+// Whether the next submission should ignore sanity checks
+const forceSubmit = ref(false)
+const forceConfirmOpen = ref(false)
+
+function onForceConfirmed() {
+  submitAction.value = 'redirect'
+  forceSubmit.value = true
+  form.value?.submit()
+}
 
 const state = reactive<Partial<CreateTaskInput>>({
   url: undefined,
@@ -41,8 +51,10 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
   // Reset the submitAction state, otherwise the redirect button doesn't do what you expect on subsequent clicks.
   const action = submitAction.value
   submitAction.value = 'redirect'
+  const force = forceSubmit.value
+  forceSubmit.value = false
   try {
-    const response = await mutation.mutateAsync(event.data)
+    const response = await mutation.mutateAsync(force ? {...event.data, force: true} : event.data)
     toast.add({
       title: 'Ingest task created successfully.',
       icon: 'pepicons-pop:soft-drink-circle'
@@ -185,7 +197,7 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
       <UButton
         color="info"
         type="submit"
-        @click="submitAction = 'redirect'"
+        @click="submitAction = 'redirect'; forceSubmit = false"
       >
         <UIcon name="pepicons-pop:soft-drink" />
         Slurp Media
@@ -199,6 +211,14 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
               submitAction = 'background'
               form?.submit()
             }
+          },
+          {
+            label: 'Force Slurp (ignore checks)',
+            icon: 'pepicons-pop:exclamation-circle-off',
+            color: 'warning',
+            onSelect() {
+              forceConfirmOpen = true
+            }
           }
         ]"
       >
@@ -209,5 +229,9 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
         />
       </UDropdownMenu>
     </UFieldGroup>
+    <ForceConfirmModal
+      v-model:open="forceConfirmOpen"
+      @confirm="onForceConfirmed"
+    />
   </UForm>
 </template>
