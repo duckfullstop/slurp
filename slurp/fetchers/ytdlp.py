@@ -141,7 +141,7 @@ class YTDLPFetcher(Fetcher):
 
         if fetch.headers is not None:
             cfg["http_headers"] = fetch.headers
-        cfg = self._gen_format_config(fetch.format)
+        cfg = cfg | self._gen_format_config(fetch.format)
         return cfg
 
     def _get_metadata(self, fetch: FetchSpec) -> MediaMetadata:
