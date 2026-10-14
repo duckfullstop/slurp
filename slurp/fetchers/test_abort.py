@@ -113,7 +113,7 @@ def test_ytdlp_abort_mid_download(tmp_path, monkeypatch):
                     hook({"status": "downloading"})
 
     monkeypatch.setattr(ytdlp, "YoutubeDL", FakeYoutubeDL)
-    monkeypatch.setattr(YTDLPFetcher, "_get_metadata", lambda s, url, fmt: _meta())
+    monkeypatch.setattr(YTDLPFetcher, "_get_metadata", lambda s, fetch: _meta())
 
     aborted = threading.Event()
     threading.Timer(1.5, aborted.set).start()
