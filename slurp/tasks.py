@@ -194,13 +194,7 @@ def fetch(self: AbortableFlaskTask, pk: str):
                     # Call the fetcher module, and receive events from it
                     events = stack.enter_context(
                         contextlib.closing(
-                            fetcher.fetch(
-                                task.url,
-                                task.format,
-                                tmp_dir,
-                                task.slug,
-                                should_abort=should_abort,
-                            )
+                            fetcher.fetch(task, tmp_dir, should_abort=should_abort)
                         )
                     )
                     for event in events:

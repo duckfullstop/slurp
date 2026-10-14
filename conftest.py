@@ -2,7 +2,20 @@
 conftest.py defines the fixtures and settings that pytest uses when running the test suite.
 """
 
+from dataclasses import dataclass
+
 import pytest
+
+from slurp.fetchers.types import Format
+
+
+@dataclass
+class StubFetch:
+    """Stand-in for slurp.models.Fetch (a Redis model that can't be instantiated without a database)."""
+
+    url: str = "https://example.invalid/video"
+    format: Format = Format.VIDEO_AUDIO
+    slug: str = "test"
 
 
 def pytest_addoption(parser):

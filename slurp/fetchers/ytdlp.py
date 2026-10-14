@@ -15,6 +15,7 @@ from slurp.fetchers.types import (
     FetcherMediaMetadataAvailable,
     FetcherProgressReport,
     FetcherUpdateEvent,
+    FetchSpec,
     Format,
     MediaMetadata,
 )
@@ -248,19 +249,21 @@ class YTDLPFetcher(Fetcher):
 
     def fetch(
         self,
-        url: str,
-        fmt: Format,
+        fetch: FetchSpec,
         directory: str,
-        filename: str,
         should_abort: Callable[[], bool] | None = None,
     ) -> Generator[FetcherUpdateEvent]:
-        """get_media downloads the media at the given params in the foreground, returning log information by means of a Generator."""
+        """get_media downloads the media at the given params in the foreground, returning log information by means of a Generator.
+        :param fetch: The Fetch to process.
+        :param directory: The directory to download the media to.
+        :param should_abort: Abort function.
+        """
         q: queue.Queue[FetcherUpdateEvent] = queue.Queue()
 
         # We need to run the download on a thread so we can continue to execute our client response
         thread = threading.Thread(
             target=self._get_media,
-            args=(q, url, fmt, directory, filename, should_abort),
+            args=(q, fetch.url, fetch.format, directory, fetch.slug, should_abort),
             daemon=True,
         )
         thread.start()
