@@ -3,6 +3,7 @@ from collections.abc import Callable, Generator
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from typing import Protocol
 
 
 class Format(str, Enum):
@@ -11,6 +12,17 @@ class Format(str, Enum):
     VIDEO_AUDIO = "Video+Audio"
     VIDEO_ONLY = "Video Only (muted)"
     AUDIO_ONLY = "Audio Only"
+
+
+class FetchSpec(Protocol):
+    """
+    FetchSpec is what a Fetcher needs to know about a requested fetch.
+    It is satisfied structurally by the database's Fetch model, which keeps fetchers independent of the database.
+    """
+
+    url: str
+    format: Format
+    slug: str
 
 
 @dataclass()
@@ -88,10 +100,8 @@ class Fetcher(ABC):
     @abstractmethod
     def fetch(
         self,
-        url: str,
-        fmt: Format,
+        fetch: FetchSpec,
         directory: str,
-        filename: str,
         should_abort: Callable[[], bool] | None = None,
     ) -> Generator[FetcherUpdateEvent]:
         """
@@ -105,8 +115,6 @@ class Fetcher(ABC):
 
         If early metadata for the given media is available, return a MediaMetadata object.
         Otherwise, return FetcherProgress objects.
-        :param url:
-        :param fmt:
-        :param directory:
-        :param filename:
+        :param fetch: The fetch to carry out (the database Fetch model satisfies this).
+        :param directory: Directory to download the target to. This is likely a temporary directory.
         """

@@ -5,10 +5,11 @@ import time
 
 import pytest
 
+from conftest import StubFetch
 from slurp.fetchers import ytdlp
 from slurp.fetchers.cobalt import CobaltFetcher
 from slurp.fetchers.get_iplayer import BBCiPlayerFetcher
-from slurp.fetchers.types import FetcherProgressReport, Format
+from slurp.fetchers.types import FetcherProgressReport
 from slurp.fetchers.ytdlp import YTDLPFetcher
 
 
@@ -27,13 +28,7 @@ def test_iplayer_abort_kills_process_group(tmp_path, monkeypatch):
 
     start = time.monotonic()
     events = list(
-        fetcher.fetch(
-            "https://example.com",
-            Format.VIDEO_AUDIO,
-            str(tmp_path),
-            "out",
-            should_abort=aborted.is_set,
-        )
+        fetcher.fetch(StubFetch(), str(tmp_path), should_abort=aborted.is_set)
     )
     assert time.monotonic() - start < 15
     assert not any(
@@ -89,13 +84,7 @@ def test_cobalt_abort_stops_download(tmp_path, monkeypatch):
     threading.Timer(1.0, aborted.set).start()
     before = threading.active_count()
     events = list(
-        fetcher.fetch(
-            "https://example.com",
-            Format.VIDEO_AUDIO,
-            str(tmp_path),
-            "out",
-            should_abort=aborted.is_set,
-        )
+        fetcher.fetch(StubFetch(), str(tmp_path), should_abort=aborted.is_set)
     )
     assert not any(
         isinstance(e, FetcherProgressReport) and e.typ == "finish" for e in events
@@ -132,13 +121,7 @@ def test_ytdlp_abort_mid_download(tmp_path, monkeypatch):
 
     start = time.monotonic()
     events = list(
-        YTDLPFetcher().fetch(
-            "https://example.com",
-            Format.VIDEO_AUDIO,
-            str(tmp_path),
-            "out",
-            should_abort=aborted.is_set,
-        )
+        YTDLPFetcher().fetch(StubFetch(), str(tmp_path), should_abort=aborted.is_set)
     )
     assert time.monotonic() - start < 15
     finishes = [

@@ -2,14 +2,26 @@ import httpx
 import pytest
 import yt_dlp.utils
 
+from conftest import StubFetch
 from slurp.fetchers.types import Format
 from slurp.fetchers.ytdlp import YTDLPFetcher, _make_cancel_hook
 
-_urls = {
-    # The URLs in this dictionary are here purely because they serve as good tests. They are not an endorsement of the content.
-    "small": "https://www.youtube.com/watch?v=eVrYbKBrI7o",  # toot
-    "huge": "https://www.youtube.com/watch?v=mSX3OyW9Rao",  # 8 hours roaring fire
-    "x_odd_length": "https://x.com/IslamInvasion/status/2096682082450002048",  # Fractional length - content warning
+_fetches = {
+    "small": StubFetch(
+        url="https://www.youtube.com/watch?v=eVrYbKBrI7o",
+        format=Format.VIDEO_AUDIO,
+        slug="test",
+    ),  # toot
+    "huge": StubFetch(
+        url="https://www.youtube.com/watch?v=mSX3OyW9Rao",
+        format=Format.VIDEO_AUDIO,
+        slug="test",
+    ),  # 8 hours roaring fire
+    "x_odd_length": StubFetch(
+        url="https://x.com/IslamInvasion/status/2096682082450002048",
+        format=Format.VIDEO_AUDIO,
+        slug="test",
+    ),  # Fractional length - content warning
 }
 
 
@@ -38,12 +50,12 @@ class TestYTDLPFetcher:
 
     @pytest.mark.network
     def test_get_metadata(self, fetcher_instance):
-        meta = fetcher_instance._get_metadata(_urls["huge"])
+        meta = fetcher_instance._get_metadata(_fetches["huge"].url)
         assert meta is not None, "_get_metadata returned None"
 
     @pytest.mark.network
     def test_get_metadata_x(self, fetcher_instance):
-        meta = fetcher_instance._get_metadata(_urls["x_odd_length"])
+        meta = fetcher_instance._get_metadata(_fetches["x_odd_length"].url)
         assert meta is not None, "_get_metadata returned None"
         # Check fractional durations are rounded correctly
         assert meta.duration == 32, (
@@ -52,25 +64,25 @@ class TestYTDLPFetcher:
 
     @pytest.mark.network
     def test_get_metadata_with_extractor_args(self, fetcher_instance_with_args):
-        meta = fetcher_instance_with_args._get_metadata(_urls["huge"])
+        meta = fetcher_instance_with_args._get_metadata(_fetches["huge"].url)
         assert meta is not None, "_get_metadata returned None"
 
     @pytest.mark.network
     @pytest.mark.dl
     def test_download(self, tmp_path, fetcher_instance):
         for event in fetcher_instance.fetch(
-            _urls["small"], Format.VIDEO_AUDIO, str(tmp_path.absolute()), "test"
+            _fetches["small"], str(tmp_path.absolute())
         ):
             print(event)
-        assert (tmp_path / "test.webm").exists(), (
-            "output file does not exist (expected 'test.mp4')"
+        assert (tmp_path / "test.mkv").exists(), (
+            "output file does not exist (expected 'test.mkv')"
         )
 
     @pytest.mark.network
     @pytest.mark.dl
     def test_download_x(self, tmp_path, fetcher_instance):
         for event in fetcher_instance.fetch(
-            _urls["x_odd_length"], Format.VIDEO_AUDIO, str(tmp_path.absolute()), "test"
+            _fetches["x_odd_length"], str(tmp_path.absolute())
         ):
             print(event)
         assert (tmp_path / "test.mp4").exists(), (
@@ -85,9 +97,7 @@ class TestYTDLPFetcher:
         Warning: this test downloads an enormous video with a huge filesize!
         It is intended purely as a stress test.
         """
-        for event in fetcher_instance.fetch(
-            _urls["huge"], Format.VIDEO_AUDIO, str(tmp_path.absolute()), "test"
-        ):
+        for event in fetcher_instance.fetch(_fetches["huge"], str(tmp_path.absolute())):
             print(event)
         assert (tmp_path / "test.webm").exists(), (
             "output file does not exist (expected 'test.webm')"
@@ -98,14 +108,11 @@ class TestYTDLPFetcherAbort:
     def test_abort_before_start(self, tmp_path):
         events = list(
             YTDLPFetcher().fetch(
-                "https://example.invalid/video",
-                Format.VIDEO_AUDIO,
-                str(tmp_path),
-                "out",
-                should_abort=lambda: True,
+                _fetches["small"], str(tmp_path), should_abort=lambda: True
             )
         )
         assert len(events) == 1
+        assert type(events[0]).__name__ == "FetcherProgressReport"
         assert events[0].typ == "finish"
         assert events[0].status == 1
         assert events[0].message == "Fetcher aborted"
