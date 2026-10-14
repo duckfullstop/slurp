@@ -23,6 +23,8 @@ class FetchSpec(Protocol):
     url: str
     format: Format
     slug: str
+    # Extra headers to supply when requesting upstream. This is not guaranteed to be honored.
+    headers: dict[str, str] | None = None
 
 
 @dataclass()

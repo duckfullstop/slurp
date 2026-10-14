@@ -36,7 +36,13 @@ from slurp.models.task import FetchEvent
     ignore_result=False,
 )
 def create_fetch(
-    self: Task, url: str, fmt: str, target: str, slug: str, force: bool = False
+    self: Task,
+    url: str,
+    fmt: str,
+    target: str,
+    slug: str,
+    force: bool = False,
+    headers: dict[str, str] | None = None,
 ) -> str:
     """
     Create and enqueue the given media for fetching.
@@ -46,6 +52,7 @@ def create_fetch(
     :param target: Target output directory. Must be configured.
     :param slug: Output filename.
     :param force: Ignore sanity checks.
+    :param headers: HTTP headers to override in the request (where supported by fetcher).
     :return: Created Fetch's PK.
     """
     # Safety: Validate the destination is permitted
@@ -60,6 +67,7 @@ def create_fetch(
         target=target,
         slug=slug,
         force=force,
+        headers=headers,
     )
     task.status = Fetch.TaskStatus.created
     task.save()
@@ -73,6 +81,7 @@ def create_fetch(
             "target": task.target,
             "slug": task.slug,
             "force": task.force,
+            "headers": task.headers,
         },
         type="task_created",
     )

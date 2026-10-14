@@ -84,6 +84,9 @@ class Fetch(BaseModel, index=True):
     # Warning - enabling this can result in huge files getting downloaded!
     force: bool = Field(default=False)
 
+    # Override the given headers in fetchers that support this functionality.
+    headers: dict[str, str] = Field(default_factory=dict)
+
     def lock(self, *args, **kwargs):
         return self.db().lock(name=self.pk, *args, **kwargs)
 

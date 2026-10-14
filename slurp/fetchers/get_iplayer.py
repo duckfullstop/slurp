@@ -336,6 +336,12 @@ class BBCiPlayerFetcher(Fetcher):
         """
         q: queue.Queue[FetcherUpdateEvent] = queue.Queue()
         run = _Run()
+        if fetch.headers is not None:
+            yield FetcherProgressReport(
+                typ="log",
+                level="warning",
+                message="get_iplayer does not support setting headers - these will be ignored.",
+            )
 
         # We need to run the download on a thread so we can continue to execute our client response
         thread = threading.Thread(

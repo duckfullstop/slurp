@@ -16,6 +16,7 @@ class StubFetch:
     url: str = "https://example.invalid/video"
     format: Format = Format.VIDEO_AUDIO
     slug: str = "test"
+    headers: dict[str, str] | None = None
 
 
 def pytest_addoption(parser):
