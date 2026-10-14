@@ -56,12 +56,12 @@ class TestYTDLPFetcher:
 
     @pytest.mark.network
     def test_get_metadata(self, fetcher_instance):
-        meta = fetcher_instance._get_metadata(_fetches["huge"].url)
+        meta = fetcher_instance._get_metadata(_fetches["huge"])
         assert meta is not None, "_get_metadata returned None"
 
     @pytest.mark.network
     def test_get_metadata_x(self, fetcher_instance):
-        meta = fetcher_instance._get_metadata(_fetches["x_odd_length"].url)
+        meta = fetcher_instance._get_metadata(_fetches["x_odd_length"])
         assert meta is not None, "_get_metadata returned None"
         # Check fractional durations are rounded correctly
         assert meta.duration == 32, (
@@ -70,7 +70,7 @@ class TestYTDLPFetcher:
 
     @pytest.mark.network
     def test_get_metadata_with_extractor_args(self, fetcher_instance_with_args):
-        meta = fetcher_instance_with_args._get_metadata(_fetches["huge"].url)
+        meta = fetcher_instance_with_args._get_metadata(_fetches["huge"])
         assert meta is not None, "_get_metadata returned None"
 
     @pytest.mark.network
