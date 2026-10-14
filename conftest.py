@@ -17,6 +17,7 @@ class StubFetch:
     format: Format = Format.VIDEO_AUDIO
     slug: str = "test"
     headers: dict[str, str] | None = None
+    playlist_index: int | None = None
 
 
 def pytest_addoption(parser):

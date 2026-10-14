@@ -9,15 +9,18 @@ from glob import glob
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadCancelled
 
+from slurp.fetchers.exceptions import PlaylistDetected
 from slurp.fetchers.types import (
     Fetcher,
     FetcherMediaAvailable,
     FetcherMediaMetadataAvailable,
+    FetcherPlaylistAvailable,
     FetcherProgressReport,
     FetcherUpdateEvent,
     FetchSpec,
     Format,
     MediaMetadata,
+    PlaylistEntry,
 )
 
 
@@ -141,17 +144,46 @@ class YTDLPFetcher(Fetcher):
 
         if fetch.headers is not None:
             cfg["http_headers"] = fetch.headers
+        if fetch.playlist_index is not None:
+            # Narrow a playlist down to the one entry this Fetch is for.
+            cfg["playlist_items"] = str(fetch.playlist_index)
         cfg = cfg | self._gen_format_config(fetch.format)
         return cfg
 
     def _get_metadata(self, fetch: FetchSpec) -> MediaMetadata:
-        """_get_metadata returns MediaMetadata for the given url."""
+        """
+        _get_metadata returns MediaMetadata for the given url.
+        :raises PlaylistDetected: if the url is a playlist of more than one entry (and fetch.playlist_index isn't set).
+        """
         data = MediaMetadata(fetch.url)
         with YoutubeDL(self._gen_config(fetch)) as ydl:
             info = ydl.extract_info(fetch.url, download=False)
 
             # sanitize_info required to make serializable
             response = ydl.sanitize_info(info)
+
+            if response.get("_type") == "playlist":
+                entries = [e for e in response.get("entries") or [] if e]
+                if len(entries) == 1:
+                    # Not worth spawning a Fetch for - treat the lone entry as the media.
+                    response = entries[0]
+                elif fetch.playlist_index is not None:
+                    # A spawned Fetch must resolve to a single entry, otherwise we'd spawn forever.
+                    raise ValueError(
+                        f"playlist_index {fetch.playlist_index} did not narrow the playlist to a single entry"
+                    )
+                else:
+                    raise PlaylistDetected(
+                        [
+                            PlaylistEntry(
+                                url=e.get("webpage_url") or e.get("url") or fetch.url,
+                                index=e.get("playlist_index", i),
+                                title=e.get("title"),
+                            )
+                            for i, e in enumerate(entries, start=1)
+                        ]
+                    )
+
             data.name = response.get("title")
             data.author = response.get("uploader")
             data.author_url = response.get("uploader_url")
@@ -231,6 +263,17 @@ class YTDLPFetcher(Fetcher):
                         message="Fetcher complete",
                     )
                 )
+        except PlaylistDetected as e:
+            # Abort this Fetch: the caller creates a new Fetch for each entry.
+            q.put(FetcherPlaylistAvailable(entries=e.entries))
+            q.put(
+                FetcherProgressReport(
+                    typ="finish",
+                    level="info",
+                    status=0,
+                    message=f"Playlist detected: {len(e.entries)} entries",
+                )
+            )
         except DownloadCancelled:
             q.put(
                 FetcherProgressReport(
@@ -300,6 +343,8 @@ class YTDLPFetcher(Fetcher):
                     case FetcherMediaMetadataAvailable() as i:
                         yield i
                     case FetcherMediaAvailable() as i:
+                        yield i
+                    case FetcherPlaylistAvailable() as i:
                         yield i
         finally:
             # Don't let the caller tear down the working directory while yt-dlp may still be writing to it.

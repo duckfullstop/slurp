@@ -38,13 +38,18 @@ export function useNotifier() {
     let title: string
     let body: string | undefined
     let icon: string
-    let color: 'success' | 'error'
+    let color: 'success' | 'error' | 'warning'
 
     if (update.state === 'success') {
       title = 'Fetch ' + update.fetch_id.slice(-4) + ' succeeded'
       body = ''
       icon = 'pepicons-pop:checkmark-circle-filled'
       color = 'success'
+    } else if (update.state === 'aborted-playlist') {
+      title = 'Fetch ' + update.fetch_id.slice(-4) + ' split into a fetch per playlist entry'
+      body = update.message
+      icon = 'pepicons-pop:exclamation-circle-filled'
+      color = 'warning'
     } else if (update.state === 'aborted') {
       title = 'Fetch ' + update.fetch_id.slice(-4) + ' aborted'
       body = update.message
@@ -63,7 +68,7 @@ export function useNotifier() {
       color: color
     })
 
-    if (soundEnabled.value) playRandom(color === 'success' ? successSounds : failureSounds)
+    if (soundEnabled.value) playRandom(color === 'error' ? failureSounds : successSounds)
 
     if (notifyPermission.value && isSupported.value && permissionGranted.value) {
       show({

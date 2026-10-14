@@ -58,6 +58,9 @@ class Fetch(BaseModel, index=True):
         failed = "failed"
         # "Aborted" tasks were stopped midway, and are in an unknown state.
         cancelled = "aborted"
+        # "Aborted-playlist" tasks were abandoned because the URL is a playlist. They are terminal: a Fetch was
+        # created for each entry instead, so retrying this one would only duplicate them.
+        cancelled_playlist = "aborted-playlist"
         # "Completed" tasks is one where it finished executing, but we don't know the outcome for some reason.
         completed = "completed"
         # "Unknown" tasks are ones where the execution state is a mystery to us.
@@ -86,6 +89,9 @@ class Fetch(BaseModel, index=True):
 
     # Override the given headers in fetchers that support this functionality.
     headers: dict[str, str] = Field(default_factory=dict)
+
+    # If the URL is a playlist, the 1-based index of the entry this Fetch is for (set on Fetches spawned from a playlist).
+    playlist_index: int | None = None
 
     def lock(self, *args, **kwargs):
         return self.db().lock(name=self.pk, *args, **kwargs)
