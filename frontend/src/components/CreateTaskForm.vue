@@ -33,8 +33,17 @@ const state = reactive<Partial<CreateTaskInput>>({
   url: undefined,
   slug: undefined,
   format: 'VIDEO_AUDIO',
-  target: undefined
+  target: undefined,
+  headers: []
 })
+
+function addHeader() {
+  state.headers = [...(state.headers ?? []), {key: '', value: ''}]
+}
+
+function removeHeader(index: number) {
+  state.headers = (state.headers ?? []).filter((_, i) => i !== index)
+}
 
 const targetOptions = computed<SelectItem[]>(() =>
   Object.entries(config.value?.outputs ?? {}).map(([value, label]) => ({value, label}))
@@ -64,6 +73,7 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
     state.slug = undefined
     state.format = 'VIDEO_AUDIO'
     state.target = Object.keys(config.value?.outputs ?? {})[0]
+    state.headers = []
 
     if (action === 'redirect') {
       router.push({name: '/fetch/[id]', params: {id: response.fetch_id}})
@@ -175,6 +185,68 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskInput>) {
       </UFormField>
     </div>
 
+    <UCollapsible class="space-y-3">
+      <UButton
+        :ui="{trailingIcon: 'transition-transform group-data-[state=open]:rotate-180'}"
+        class="group"
+        color="neutral"
+        icon="i-lucide-chevron-down"
+        label="Advanced"
+        trailing
+        variant="ghost"
+      />
+      <template #content>
+        <div class="space-y-3 pt-3">
+          <div class="text-sm font-medium">
+            HTTP headers
+          </div>
+          <p class="text-sm text-muted">
+            Extra headers to send when fetching the URL, e.g. <code>Authorization</code>, <code>Cookie</code>, <code>Referer</code> etc. Please be careful using this!
+          </p>
+          <div
+            v-for="(header, index) in state.headers"
+            :key="index"
+            class="flex items-start gap-x-2"
+          >
+            <UFormField
+              :name="`headers.${index}.key`"
+              class="flex-1"
+            >
+              <UInput
+                v-model="header.key"
+                class="w-full"
+                placeholder="Header name"
+              />
+            </UFormField>
+            <UFormField
+              :name="`headers.${index}.value`"
+              class="flex-1"
+            >
+              <UInput
+                v-model="header.value"
+                class="w-full"
+                placeholder="Value"
+              />
+            </UFormField>
+            <UButton
+              aria-label="Remove header"
+              color="neutral"
+              icon="i-lucide-trash-2"
+              variant="ghost"
+              @click="removeHeader(index)"
+            />
+          </div>
+          <UButton
+            color="neutral"
+            icon="i-lucide-plus"
+            label="Add header"
+            size="sm"
+            variant="soft"
+            @click="addHeader"
+          />
+        </div>
+      </template>
+    </UCollapsible>
 
     <UAlert
       v-if="mutation.isSuccess.value"
