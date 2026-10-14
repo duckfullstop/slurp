@@ -44,6 +44,12 @@ const finalStatusStepper: Record<string, StepperItem> = {
     icon: 'pepicons-pop:exclamation',
     value: 'aborted'
   },
+  'aborted-playlist': {
+    title: 'Playlist',
+    description: 'The URL is a playlist. This fetch was replaced by one fetch per entry (see the logs).',
+    icon: 'pepicons-pop:exclamation',
+    value: 'aborted-playlist'
+  },
   success: {
     title: 'Complete',
     description: 'The fetch is complete.',
@@ -81,6 +87,7 @@ const timelineColor = computed(() => {
     case 'failed':
       return 'error'
     case 'aborted':
+    case 'aborted-playlist':
       return 'warning'
     default:
       return 'success'
@@ -141,7 +148,7 @@ if (data.value?.id) {
       <FetchEventLog
         v-if="!data.purged"
         :id="data.id"
-        :live="!['success', 'failed', 'aborted'].includes(data.status)"
+        :live="!['success', 'failed', 'aborted', 'aborted-playlist'].includes(data.status)"
       />
       <UAlert
         v-else

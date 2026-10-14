@@ -25,6 +25,8 @@ class FetchSpec(Protocol):
     slug: str
     # Extra headers to supply when requesting upstream. This is not guaranteed to be honored.
     headers: dict[str, str] | None = None
+    # When the URL resolves to a playlist, the 1-based index of the single entry to fetch.
+    playlist_index: int | None = None
 
 
 @dataclass()
@@ -72,6 +74,26 @@ class FetcherMediaMetadataAvailable(FetcherUpdateEvent):
     """FetcherMediaMetadataAvailable is a FetcherUpdateEvent fired when the metadata of the given media is available."""
 
     metadata: MediaMetadata
+
+
+@dataclass()
+class PlaylistEntry:
+    """PlaylistEntry is one media item within a playlist, addressable as a Fetch of its own."""
+
+    url: str
+    # 1-based position within the playlist. Needed when entries share a URL (e.g. multiple videos in one Tweet).
+    index: int | None = None
+    title: str | None = None
+
+
+@dataclass()
+class FetcherPlaylistAvailable(FetcherUpdateEvent):
+    """
+    FetcherPlaylistAvailable is a FetcherUpdateEvent fired when the requested URL turned out to be a playlist.
+    The fetcher does not download anything in this case: the caller should create a Fetch per entry.
+    """
+
+    entries: list[PlaylistEntry]
 
 
 class Fetcher(ABC):

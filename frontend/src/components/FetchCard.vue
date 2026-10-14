@@ -20,6 +20,7 @@ let highlightColor = computed(() => {
       return 'error'
     case 'aborting':
     case 'aborted':
+    case 'aborted-playlist':
       return 'warning'
     case 'success':
       return 'success'

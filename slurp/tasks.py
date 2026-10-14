@@ -17,11 +17,14 @@ from slurp.fetchers.exceptions import (
     FetchersExhaustedError,
     FetchLockedError,
     NoFetchersAvailable,
+    PlaylistExpanded,
 )
 from slurp.fetchers.types import (
     FetcherMediaAvailable,
     FetcherMediaMetadataAvailable,
+    FetcherPlaylistAvailable,
     FetcherProgressReport,
+    PlaylistEntry,
 )
 from slurp.finaliser import finalise, sanity_checker, troubleshooter
 from slurp.flask_task import AbortableFlaskTask
@@ -43,6 +46,7 @@ def create_fetch(
     slug: str,
     force: bool = False,
     headers: dict[str, str] | None = None,
+    playlist_index: int | None = None,
 ) -> str:
     """
     Create and enqueue the given media for fetching.
@@ -53,6 +57,7 @@ def create_fetch(
     :param slug: Output filename.
     :param force: Ignore sanity checks.
     :param headers: HTTP headers to override in the request (where supported by fetcher).
+    :param playlist_index: If the URL is a playlist, the 1-based index of the single entry to fetch.
     :return: Created Fetch's PK.
     """
     # Safety: Validate the destination is permitted
@@ -68,6 +73,7 @@ def create_fetch(
         slug=slug,
         force=force,
         headers=headers,
+        playlist_index=playlist_index,
     )
     task.status = Fetch.TaskStatus.created
     task.save()
@@ -82,6 +88,7 @@ def create_fetch(
             "slug": task.slug,
             "force": task.force,
             "headers": task.headers,
+            "playlist_index": task.playlist_index,
         },
         type="task_created",
     )
@@ -89,6 +96,42 @@ def create_fetch(
     # Enqueue.
     enqueue_fetch.apply_async(kwargs={"pk": task.pk})
     return task.pk
+
+
+def _spawn_playlist_fetches(task: Fetch, entries: list[PlaylistEntry]) -> list[str]:
+    """
+    Create a new Fetch for each entry of a playlist, inheriting the parent's settings.
+    :param task: The parent Fetch, whose URL turned out to be a playlist.
+    :param entries: The playlist's entries.
+    :return: The PKs of the created Fetches.
+    """
+    if task.playlist_index is not None:
+        # This Fetch was already narrowed to one entry. Spawning again could loop forever.
+        raise ValueError("a Fetch spawned from a playlist resolved to a playlist again")
+
+    task.emit_event(
+        "log",
+        "info",
+        f"URL is a playlist of {len(entries)} entries - creating a Fetch for each",
+    )
+    width = max(2, len(str(len(entries))))
+    pks: list[str] = []
+    for pos, entry in enumerate(entries, start=1):
+        index = entry.index if entry.index is not None else pos
+        # Called directly rather than with .delay(): we need the PK, and tasks must not wait on each other's results.
+        pks.append(
+            create_fetch(
+                url=entry.url,
+                fmt=task.format,
+                target=task.target,
+                slug=f"{task.slug} - {index:0{width}d}",
+                force=task.force,
+                headers=task.headers,
+                playlist_index=index,
+            )
+        )
+    task.emit_event("log", "info", f"Created Fetches: {', '.join(pks)}")
+    return pks
 
 
 @shared_task(
@@ -190,6 +233,7 @@ def fetch(self: AbortableFlaskTask, pk: str):
                 )
                 success: bool = False
                 media_path: str | None = None
+                playlist_entries: list[PlaylistEntry] | None = None
                 for idx, fetcher in enumerate(fetchers):
                     # yield f"<code class='fetcher-progress-message'>🛫 {'Trying Fetch again' if idx > 0 else 'Fetching'} with {fetcher.name}...</code>"
                     self.update_state(
@@ -268,6 +312,8 @@ def fetch(self: AbortableFlaskTask, pk: str):
                                             )
                             case FetcherMediaAvailable() as e:
                                 media_path = e.path
+                            case FetcherPlaylistAvailable() as e:
+                                playlist_entries = e.entries
                             case FetcherProgressReport() as e:
                                 self.update_state(event=e)
                                 task.emit_event(e.typ, e.level, e.message, e.status)
@@ -289,6 +335,11 @@ def fetch(self: AbortableFlaskTask, pk: str):
                     # An aborted fetcher must not fall through to the next one.
                     if should_abort():
                         raise FetchAbortedError
+                if playlist_entries is not None:
+                    # This URL is a playlist: this Fetch is abandoned, and replaced with a Fetch per entry.
+                    raise PlaylistExpanded(
+                        _spawn_playlist_fetches(task, playlist_entries)
+                    )
                 if not success:
                     raise FetchersExhaustedError
 
@@ -312,7 +363,7 @@ def fetch(self: AbortableFlaskTask, pk: str):
                     # yield f"<article class='fetcher-outcome fetcher-progress-message-level-error'>💣 Failed to finalise media: {e}</article>"
                     raise FinaliserError(e)
                 # yield f"<article class='fetcher-outcome fetcher-progress-message-level-success'>🥤 Media slurped to {final_path}</article>"
-        except FetchAbortedError:
+        except (FetchAbortedError, PlaylistExpanded):
             raise
         except Exception as e:
             # Catch exceptions and set the task state appropriately.
@@ -366,6 +417,26 @@ def fetch(self: AbortableFlaskTask, pk: str):
         )
         task.emit_event("log", "warning", "Fetch aborted")
         return None
+    except PlaylistExpanded as e:
+        # Not a failure - this Fetch was replaced by one Fetch per playlist entry
+        self.update_state(
+            status=Fetch.TaskStatus.cancelled_playlist.value, children=e.pks
+        )
+        task.status = Fetch.TaskStatus.cancelled_playlist
+        task.save()
+        sse.publish(
+            {
+                "fetch_id": task.pk,
+                "state": Fetch.TaskStatus.cancelled_playlist.value,
+            },
+            type="fetch_updated",
+        )
+        task.emit_event(
+            "log",
+            "warning",
+            f"Fetch aborted: playlist expanded into {len(e.pks)} fetches",
+        )
+        return e.pks
     except Exception as e:
         # Mark the task failed and re-raise
         self.update_state(status=Fetch.TaskStatus.failed.value, reason=str(e))
