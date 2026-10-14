@@ -102,16 +102,12 @@ class YTDLPFetcher(Fetcher):
         def error(self, msg):
             self.q.put(FetcherProgressReport(typ="log", level="error", message=msg))
 
-    def _format_config(self, fmt: Format) -> dict:
-        """_format_config returns YT-DLP configuration to be used when downloading media in the given format.
+    def _gen_format_config(self, fmt: Format) -> dict:
+        """_gen_format_config returns YT-DLP configuration to be used when downloading media in the given format.
         :param fmt: The desired media format.
         :return: A YT-DLP configuration parameters dictionary.
         """
         cfg = {}
-        if self.extractor_args is not None:
-            # If extractor args are available, append them to the config.
-            cfg = cfg | {"extractor_args": self.extractor_args}
-
         match fmt:
             case fmt.VIDEO_AUDIO:
                 cfg = cfg | {
@@ -134,13 +130,25 @@ class YTDLPFetcher(Fetcher):
                 raise ValueError("invalid format")
         return cfg
 
-    def _get_metadata(
-        self, url: str, fmt: Format = Format.VIDEO_AUDIO
-    ) -> MediaMetadata:
+    def _gen_config(self, fetch: FetchSpec):
+        cfg = {}
+        if self.extractor_args is not None:
+            # If extractor args are available, append them to the config.
+            cfg["extractor_args"] = self.extractor_args
+
+        # Note: May need to set this if the fetch fails with a suggestion to use it:
+        # cfg["extractor_args"]["generic"] = "impersonate"
+
+        if fetch.headers is not None:
+            cfg["http_headers"] = fetch.headers
+        cfg = self._gen_format_config(fetch.format)
+        return cfg
+
+    def _get_metadata(self, fetch: FetchSpec) -> MediaMetadata:
         """_get_metadata returns MediaMetadata for the given url."""
-        data = MediaMetadata(url)
-        with YoutubeDL(self._format_config(fmt)) as ydl:
-            info = ydl.extract_info(url, download=False)
+        data = MediaMetadata(fetch.url)
+        with YoutubeDL(self._gen_config(fetch)) as ydl:
+            info = ydl.extract_info(fetch.url, download=False)
 
             # sanitize_info required to make serializable
             response = ydl.sanitize_info(info)
@@ -169,10 +177,8 @@ class YTDLPFetcher(Fetcher):
     def _get_media(
         self,
         q: queue.Queue[FetcherUpdateEvent],
-        url: str,
-        fmt: Format,
+        fetch: FetchSpec,
         directory: str,
-        filename: str,
         should_abort: Callable[[], bool] | None = None,
     ):
         """
@@ -183,7 +189,7 @@ class YTDLPFetcher(Fetcher):
             {
                 "logger": self._Queuelogger(q),
                 "no_warnings": True,
-                "outtmpl": f"{directory}/{filename}.%(ext)s",
+                "outtmpl": f"{directory}/{fetch.slug}.%(ext)s",
                 "paths": {
                     "home": directory,
                     "temp": f"{directory}/temp",  # currently hard-coded - should we make this configurable?
@@ -191,7 +197,7 @@ class YTDLPFetcher(Fetcher):
                 "progress_hooks": [cancel_hook],
                 "postprocessor_hooks": [cancel_hook],
             }
-            | self._format_config(fmt)
+            | self._gen_config(fetch)
         )
 
         if self.js_runtimes is not None:
@@ -202,7 +208,7 @@ class YTDLPFetcher(Fetcher):
                 raise DownloadCancelled("Abort requested")
 
             # We support early metadata - send that if it's available.
-            metadata = self._get_metadata(url, fmt)
+            metadata = self._get_metadata(fetch)
             if metadata.name != "":
                 event = FetcherMediaMetadataAvailable(metadata=metadata)
                 q.put(event)
@@ -211,7 +217,7 @@ class YTDLPFetcher(Fetcher):
                 raise DownloadCancelled("Abort requested")
 
             with YoutubeDL(opts) as ydl:
-                code = ydl.download([url])
+                code = ydl.download([fetch.url])
                 files = glob(f"{directory}/*.*")
                 assert len(files) == 1, (
                     f"unexpected number of files in bagging area: {len(files)}"
@@ -263,7 +269,7 @@ class YTDLPFetcher(Fetcher):
         # We need to run the download on a thread so we can continue to execute our client response
         thread = threading.Thread(
             target=self._get_media,
-            args=(q, fetch.url, fetch.format, directory, fetch.slug, should_abort),
+            args=(q, fetch, directory, should_abort),
             daemon=True,
         )
         thread.start()

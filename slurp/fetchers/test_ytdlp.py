@@ -22,6 +22,12 @@ _fetches = {
         format=Format.VIDEO_AUDIO,
         slug="test",
     ),  # Fractional length - content warning
+    "vimeo_requires_openai_header": StubFetch(
+        url="https://player.vimeo.com/video/1151655050?h=ba15f56a51&amp%3Bbadge=0&amp%3Bautopause=0&amp%3Bplayer_id=0&amp%3Bapp_id=58479&controls=0&autopause=0",
+        format=Format.VIDEO_AUDIO,
+        slug="test",
+        headers={"Referer": "openai.com"},
+    ),
 }
 
 
@@ -98,6 +104,29 @@ class TestYTDLPFetcher:
         It is intended purely as a stress test.
         """
         for event in fetcher_instance.fetch(_fetches["huge"], str(tmp_path.absolute())):
+            print(event)
+        assert (tmp_path / "test.webm").exists(), (
+            "output file does not exist (expected 'test.webm')"
+        )
+
+    @pytest.mark.network
+    def test_get_metadata_vimeo_requires_openai_header(
+        self, tmp_path, fetcher_instance
+    ):
+        meta = fetcher_instance._get_metadata(_fetches["vimeo_requires_openai_header"])
+        assert meta is not None, "_get_metadata returned None"
+
+    @pytest.mark.network
+    @pytest.mark.dl
+    @pytest.mark.huge_dl
+    def test_vimeo_download(self, tmp_path, fetcher_instance):
+        """
+        Warning: this test downloads an enormous video with a huge filesize!
+        It is intended purely as a stress test.
+        """
+        for event in fetcher_instance.fetch(
+            _fetches["vimeo_requires_openai_header"], str(tmp_path.absolute())
+        ):
             print(event)
         assert (tmp_path / "test.webm").exists(), (
             "output file does not exist (expected 'test.webm')"

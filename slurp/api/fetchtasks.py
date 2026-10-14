@@ -63,6 +63,13 @@ fetchTask = api.model(
         "slug": fields.String(description="Slug to save fetch as"),
         "format": __EnumValue(description="Download format"),
         "target": fields.String(description="Filesystem target identifier"),
+        "force": fields.Boolean(
+            description="Ignore sanity checks when fetching", default=False
+        ),
+        "headers": fields.Raw(
+            description="Optional HTTP headers to send when fetching, as a map of header name to value",
+            example={"Authorization": "Bearer token"},
+        ),
         "status": __EnumValue(description="Task status"),
         "meta": fields.Nested(fetchMetadata, default={}),
         "output_path": fields.String(
@@ -94,6 +101,11 @@ createTask = api.model(
         ),  # make this not required?
         "force": fields.Boolean(
             description="Ignore sanity checks when fetching", default=False
+        ),
+        "headers": fields.Raw(
+            description="HTTP headers to send when fetching, as a map of header name to value. Not supported by all Fetchers.",
+            example={"Authorization": "Bearer token"},
+            default=None,
         ),
     },
 )
@@ -129,6 +141,10 @@ class CreateTaskSchema(BaseModel):
         description="Filesystem target identifier. This MUST be a valid destination as configured."
     )
     force: bool = Field(default=False, description="Ignore sanity checks when fetching")
+    headers: dict[str, str] = Field(
+        default_factory=dict,
+        description="HTTP headers to send when fetching, as a map of header name to value",
+    )
 
 
 @api.route("/")
@@ -158,6 +174,21 @@ class List(Resource):
             else:
                 raw_data = request.form.to_dict()
 
+                # Headers are sent as repeated "header" fields in the form "Name: value".
+                # to_dict() only keeps the first value of a repeated key, so read them separately.
+                headers = {}
+                for entry in request.form.getlist("header"):
+                    name, sep, value = entry.partition(":")
+                    if not sep or not name.strip():
+                        return {
+                            "message": "Validation failed",
+                            "errors": f"Invalid header (expected 'Name: value'): {entry}",
+                        }, 400
+                    headers[name.strip()] = value.strip()
+                raw_data.pop("header", None)
+                if headers:
+                    raw_data["headers"] = headers
+
             # Validate with Pydantic
             try:
                 data = CreateTaskSchema(**raw_data)
@@ -177,6 +208,7 @@ class List(Resource):
                 target=data.target,
                 slug=data.slug,
                 force=data.force,
+                headers=data.headers,
             )
             # Await the result from the worker.
             return {"fetch_id": result.get()}, 201
