@@ -6,6 +6,25 @@ export const FORMAT_OPTIONS: { value: string; label: string }[] = [
   {value: 'AUDIO_ONLY', label: 'Audio Only'},
 ]
 
+export const headerPairSchema = z.object({
+  key: z.string(),
+  value: z.string(),
+}).refine((h) => h.key.trim() !== '' || h.value.trim() === '', {
+  message: 'Enter a header name',
+  path: ['key'],
+})
+
+export type HeaderPair = z.infer<typeof headerPairSchema>
+
+/** Converts the form's list of header pairs to the map the API expects, skipping blank rows. */
+export function headersToRecord(pairs: HeaderPair[] | undefined): Record<string, string> {
+  const headers: Record<string, string> = {}
+  for (const {key, value} of pairs ?? []) {
+    if (key.trim()) headers[key.trim()] = value.trim()
+  }
+  return headers
+}
+
 export const createTaskSchema = z.object({
   url: z.url('Enter a valid URL to a piece of web media'),
   slug: z.string({
@@ -14,6 +33,7 @@ export const createTaskSchema = z.object({
   format: z.enum(['VIDEO_AUDIO', 'VIDEO_ONLY', 'AUDIO_ONLY']),
   target: z.string().min(1, 'Choose a target directory'),
   force: z.boolean().optional(),
+  headers: z.array(headerPairSchema).optional(),
 })
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>

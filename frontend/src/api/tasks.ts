@@ -1,4 +1,4 @@
-import type {CreateTaskInput} from '../schemas/createTask'
+import {type CreateTaskInput, headersToRecord} from '../schemas/createTask'
 
 export interface FetchMetadata {
   name?: string
@@ -24,6 +24,7 @@ export interface Task {
   pruned: boolean
   purged: boolean
   worker_id?: string
+  headers?: Record<string, string>
 }
 
 export interface FetchEvent {
@@ -67,7 +68,7 @@ export async function createTask(payload: CreateTaskInput): Promise<CreateTaskRe
   const res = await fetch('/api/v1/task/', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(payload)
+    body: JSON.stringify({...payload, headers: headersToRecord(payload.headers)})
   })
   if (!res.ok) {
     throw new Error(`Failed to create task: ${res.status} ${res.statusText}`)

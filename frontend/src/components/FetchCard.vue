@@ -103,6 +103,8 @@ const canAbort = computed(() => ['created', 'running'].includes(props.task.statu
 
 const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
 
+const headerEntries = computed(() => Object.entries(props.task.headers ?? {}))
+
 </script>
 <template>
   <UChip
@@ -171,6 +173,30 @@ const safeAuthorUrl = computed(() => getSafeUrl(props.task.meta.author_url))
             name="material-symbols:media-link"
           />
           {{ task.url }}
+        </span>
+        <span
+          v-if="headerEntries.length"
+          class="flex flex-wrap items-center gap-1"
+        >
+          <UIcon name="material-symbols:list-alt-outline" />
+          <template v-if="extended">
+            <UBadge
+              v-for="[name, value] in headerEntries"
+              :key="name"
+              class="font-mono"
+              color="neutral"
+              variant="subtle"
+            >
+              {{ name }}: {{ value }}
+            </UBadge></template>
+          <UBadge
+            v-else
+            class="font-mono"
+            color="neutral"
+            variant="subtle"
+          >
+            Header Overrides
+          </UBadge>
         </span>
         <UBadge
           v-if="task.meta.duration && extended"

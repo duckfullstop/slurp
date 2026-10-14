@@ -90,6 +90,12 @@ async function onSubmit(event: FormSubmitEvent<CreateTaskBatchInput>) {
       icon="material-symbols:warning"
       title="Don't multi-slurp the same slug twice!"
     />
+    <UAlert
+      color="neutral"
+      description="Multi-slurp mode doesn't support advanced settings like HTTP headers. If you need this functionality, use Single mode."
+      icon="material-symbols:info-outline"
+      variant="subtle"
+    />
     <div class="flex flex-wrap gap-x-5 md:gap-x-10">
       <UFormField
         :help="`${urlCount} URL${urlCount === 1 ? '' : 's'} (one per line)`"
