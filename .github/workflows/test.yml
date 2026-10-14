@@ -18,7 +18,7 @@ jobs:
         python-version: [ "3.13", "3.14" ]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v7
         with:
@@ -52,7 +52,7 @@ jobs:
   backend-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: astral-sh/ruff-action@v3
 
   frontend-lint:
@@ -61,7 +61,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: pnpm/setup@v2.1.0
         with:
           working-directory: frontend
@@ -76,7 +76,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: pnpm/setup@v2.1.0
         with:
           working-directory: frontend
@@ -93,7 +93,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: pnpm/setup@v2.1.0
         with:
           working-directory: frontend
